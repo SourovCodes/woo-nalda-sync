@@ -131,9 +131,11 @@ class WNS_License_Manager {
             );
         }
 
+        $error_message = $response['message'] ?? __('Failed to activate license.', 'woo-nalda-sync');
+
         return array(
             'success' => false,
-            'message' => $response['message'] ?? __('Failed to activate license.', 'woo-nalda-sync'),
+            'message' => $this->translate_api_error($error_message),
         );
     }
 
@@ -180,9 +182,11 @@ class WNS_License_Manager {
             );
         }
 
+        $error_message = $response['message'] ?? __('Failed to deactivate license.', 'woo-nalda-sync');
+
         return array(
             'success' => false,
-            'message' => $response['message'] ?? __('Failed to deactivate license.', 'woo-nalda-sync'),
+            'message' => $this->translate_api_error($error_message),
         );
     }
 
@@ -298,9 +302,11 @@ class WNS_License_Manager {
             );
         }
 
+        $error_message = $response['message'] ?? __('Failed to get license status.', 'woo-nalda-sync');
+
         return array(
             'success' => false,
-            'message' => $response['message'] ?? __('Failed to get license status.', 'woo-nalda-sync'),
+            'message' => $this->translate_api_error($error_message),
         );
     }
 
@@ -396,6 +402,25 @@ class WNS_License_Manager {
 
         // Force validation
         $this->validate(true);
+    }
+
+    /**
+     * Translate API error message to user-friendly message
+     *
+     * @param string $api_message The error message from the API
+     * @return string Translated error message
+     */
+    private function translate_api_error($api_message) {
+        $error_map = array(
+            'Product not found.'                              => __('Invalid product configuration. Please contact support.', 'woo-nalda-sync'),
+            'Invalid license key.'                            => __('The license key you entered is invalid. Please check and try again.', 'woo-nalda-sync'),
+            'This license has been revoked.'                  => __('This license has been revoked. Please contact support.', 'woo-nalda-sync'),
+            'This license has expired.'                       => __('This license has expired. Please renew your license.', 'woo-nalda-sync'),
+            'Maximum domain changes reached. Please contact support.' => __('Maximum domain changes reached. Please contact support to reset.', 'woo-nalda-sync'),
+            'License is not activated on this domain.'        => __('This license is not activated on this domain.', 'woo-nalda-sync'),
+        );
+
+        return $error_map[$api_message] ?? $api_message;
     }
 
     /**
