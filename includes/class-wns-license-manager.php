@@ -412,12 +412,24 @@ class WNS_License_Manager {
      */
     private function translate_api_error($api_message) {
         $error_map = array(
-            'Product not found.'                              => __('Invalid product configuration. Please contact support.', 'woo-nalda-sync'),
-            'Invalid license key.'                            => __('The license key you entered is invalid. Please check and try again.', 'woo-nalda-sync'),
-            'This license has been revoked.'                  => __('This license has been revoked. Please contact support.', 'woo-nalda-sync'),
-            'This license has expired.'                       => __('This license has expired. Please renew your license.', 'woo-nalda-sync'),
+            // License/Product validation errors
+            'Product not found.'                                      => __('Invalid product configuration. Please contact support.', 'woo-nalda-sync'),
+            'Invalid license key.'                                    => __('The license key you entered is invalid. Please check and try again.', 'woo-nalda-sync'),
+
+            // License status errors
+            'License is inactive.'                                    => __('Your license is inactive. Please activate it to continue.', 'woo-nalda-sync'),
+            'License has been revoked.'                               => __('This license has been revoked. Please contact support.', 'woo-nalda-sync'),
+            'License has expired. Please renew your license.'         => __('Your license has expired. Please renew to continue receiving updates.', 'woo-nalda-sync'),
+
+            // Domain errors
+            'License is not activated on this domain.'                => __('This license is not activated on this domain.', 'woo-nalda-sync'),
             'Maximum domain changes reached. Please contact support.' => __('Maximum domain changes reached. Please contact support to reset.', 'woo-nalda-sync'),
-            'License is not activated on this domain.'        => __('This license is not activated on this domain.', 'woo-nalda-sync'),
+
+            // Legacy error messages (for backwards compatibility)
+            'This license has been revoked.'                          => __('This license has been revoked. Please contact support.', 'woo-nalda-sync'),
+            'This license has expired.'                               => __('Your license has expired. Please renew to continue receiving updates.', 'woo-nalda-sync'),
+            'License is not valid.'                                   => __('Your license is not valid. Please check your license status.', 'woo-nalda-sync'),
+            'License is not valid. Please renew your license.'        => __('Your license has expired. Please renew to continue receiving updates.', 'woo-nalda-sync'),
         );
 
         return $error_map[$api_message] ?? $api_message;
