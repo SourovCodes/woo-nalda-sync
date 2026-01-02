@@ -106,14 +106,16 @@ $next_order_sync   = isset( $next_sync_times['order_sync'] ) && $next_sync_times
             </div>
             <div class="wns-stat-value">
                 <?php
-                if ( $product_sync_status || $order_sync_status ) {
-                    echo esc_html__( 'Active', 'woo-nalda-sync' );
+                if ( $product_sync_status && $order_sync_status ) {
+                    echo esc_html__( 'All Active', 'woo-nalda-sync' );
+                } elseif ( $product_sync_status || $order_sync_status ) {
+                    echo esc_html__( 'Partial', 'woo-nalda-sync' );
                 } else {
                     echo esc_html__( 'Inactive', 'woo-nalda-sync' );
                 }
                 ?>
             </div>
-            <div class="wns-stat-label"><?php esc_html_e( 'Sync Status', 'woo-nalda-sync' ); ?></div>
+            <div class="wns-stat-label"><?php esc_html_e( 'Auto Sync', 'woo-nalda-sync' ); ?></div>
         </div>
     </div>
 
