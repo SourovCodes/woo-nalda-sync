@@ -257,7 +257,16 @@ class Woo_Nalda_Sync_License_Manager {
             );
         }
 
-        // License is invalid - update status.
+        // Check if this is a temporary error (rate limit, network, server error).
+        // In these cases, don't change the license status.
+        if ( $this->is_temporary_error( $response ) ) {
+            return array(
+                'success' => false,
+                'message' => isset( $response['message'] ) ? $response['message'] : __( 'Temporary error. Please try again later.', 'woo-nalda-sync' ),
+            );
+        }
+
+        // License is invalid - update status only for actual validation failures.
         $license_data = $this->get_license_data();
         $license_data['status'] = 'invalid';
         update_option( self::LICENSE_DATA_OPTION, $license_data );
@@ -402,6 +411,36 @@ class Woo_Nalda_Sync_License_Manager {
 
         if ( isset( $response['status_code'] ) && $response['status_code'] === 200 ) {
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if response is a temporary error (rate limit, network, server error).
+     * These errors should not change the license status.
+     *
+     * @param array $response API response.
+     * @return bool
+     */
+    private function is_temporary_error( $response ) {
+        // Network errors or invalid responses.
+        if ( isset( $response['error'] ) && $response['error'] ) {
+            return true;
+        }
+
+        // Check for temporary HTTP status codes.
+        if ( isset( $response['status_code'] ) ) {
+            $status_code = (int) $response['status_code'];
+
+            // 429 = Too Many Requests (rate limit).
+            // 500, 502, 503, 504 = Server errors.
+            // 0 = Connection failed.
+            $temporary_codes = array( 0, 429, 500, 502, 503, 504 );
+
+            if ( in_array( $status_code, $temporary_codes, true ) ) {
+                return true;
+            }
         }
 
         return false;
