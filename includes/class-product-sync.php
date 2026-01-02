@@ -422,13 +422,21 @@ class Woo_Nalda_Sync_Product_Sync {
      * @return string GTIN value or empty string.
      */
     private function get_product_gtin( $product ) {
+        // First, check WooCommerce's built-in global unique ID (GTIN) field.
+        // Use the getter method to avoid "is_internal_meta_key" warning.
+        if ( method_exists( $product, 'get_global_unique_id' ) ) {
+            $global_id = $product->get_global_unique_id();
+            if ( ! empty( $global_id ) ) {
+                return $global_id;
+            }
+        }
+
         // Check common meta keys for GTIN.
         $gtin_keys = array(
             '_gtin',
             '_ean',
             '_isbn',
             '_upc',
-            '_global_unique_id',
             'gtin',
             'ean',
             'isbn',
