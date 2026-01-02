@@ -82,6 +82,7 @@ class Woo_Nalda_Sync_Admin {
         // Sync AJAX handlers.
         add_action( 'wp_ajax_woo_nalda_sync_run_product_sync', array( $this, 'ajax_run_product_sync' ) );
         add_action( 'wp_ajax_woo_nalda_sync_run_order_sync', array( $this, 'ajax_run_order_sync' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_get_upload_history', array( $this, 'ajax_get_upload_history' ) );
 
         // Plugin action links.
         add_filter( 'plugin_action_links_' . WOO_NALDA_SYNC_PLUGIN_BASENAME, array( $this, 'plugin_action_links' ) );
@@ -180,6 +181,12 @@ class Woo_Nalda_Sync_Admin {
                 'syncOrders'        => __( 'Sync Orders', 'woo-nalda-sync' ),
                 'connectionSuccess' => __( 'Connection successful!', 'woo-nalda-sync' ),
                 'connectionFailed'  => __( 'Connection failed.', 'woo-nalda-sync' ),
+                'loading'           => __( 'Loading...', 'woo-nalda-sync' ),
+                'pageInfo'          => __( 'Page {current} of {total}', 'woo-nalda-sync' ),
+                'statusPending'     => __( 'Pending', 'woo-nalda-sync' ),
+                'statusProcessing'  => __( 'Processing', 'woo-nalda-sync' ),
+                'statusProcessed'   => __( 'Processed', 'woo-nalda-sync' ),
+                'statusFailed'      => __( 'Failed', 'woo-nalda-sync' ),
             ),
         ) );
     }
@@ -343,6 +350,32 @@ class Woo_Nalda_Sync_Admin {
         $range = isset( $_POST['range'] ) ? sanitize_text_field( wp_unslash( $_POST['range'] ) ) : 'today';
         
         $result = $this->order_sync->run_sync( $range );
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
+    }
+
+    /**
+     * AJAX: Get CSV upload history.
+     */
+    public function ajax_get_upload_history() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        if ( ! $this->license_manager->is_valid() ) {
+            wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
+        }
+
+        $per_page = isset( $_POST['per_page'] ) ? absint( $_POST['per_page'] ) : 10;
+        $page     = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
+
+        $result = $this->product_sync->get_upload_history( $per_page, $page );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );

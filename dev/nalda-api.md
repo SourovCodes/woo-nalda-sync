@@ -197,7 +197,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/nalda/csv-upload \
     "sftp_port": 22,
     "sftp_username": "myuser",
     "status": "pending",
-    "status_label": "Pending",
     "processed_at": null,
     "error_message": null,
     "csv_url": "https://licence-manager.jonakyds.com/storage/1/file.csv",
@@ -303,7 +302,6 @@ curl -X GET "https://licence-manager.jonakyds.com/api/v1/nalda/csv-uploads?per_p
       "sftp_port": 22,
       "sftp_username": "myuser",
       "status": "processed",
-      "status_label": "Processed",
       "processed_at": "2026-01-03T12:05:00+00:00",
       "error_message": null,
       "csv_url": "https://licence-manager.jonakyds.com/storage/3/file.csv",
@@ -317,7 +315,6 @@ curl -X GET "https://licence-manager.jonakyds.com/api/v1/nalda/csv-uploads?per_p
       "sftp_port": 22,
       "sftp_username": "myuser",
       "status": "failed",
-      "status_label": "Failed",
       "processed_at": "2026-01-02T15:30:00+00:00",
       "error_message": "SFTP connection timeout",
       "csv_url": "https://licence-manager.jonakyds.com/storage/2/file.csv",
@@ -397,7 +394,6 @@ Upload requests can have one of the following statuses:
 | `sftp_port` | integer | The SFTP server port |
 | `sftp_username` | string | The SFTP username |
 | `status` | string | Current status (`pending`, `processing`, `processed`, `failed`) |
-| `status_label` | string | Human-readable status label |
 | `processed_at` | string\|null | ISO 8601 timestamp when processing completed |
 | `error_message` | string\|null | Error details if status is `failed` |
 | `csv_url` | string | URL to download the uploaded CSV file |

@@ -933,4 +933,96 @@ class Woo_Nalda_Sync_Product_Sync {
             'total_syncs'     => isset( $stats['total_product_syncs'] ) ? $stats['total_product_syncs'] : 0,
         );
     }
+
+    /**
+     * Get CSV upload history from API.
+     *
+     * @param int $per_page Number of results per page.
+     * @param int $page     Page number.
+     * @return array Result with uploads data or error message.
+     */
+    public function get_upload_history( $per_page = 10, $page = 1 ) {
+        $license_key = $this->license_manager->get_license_key();
+
+        if ( empty( $license_key ) ) {
+            return array(
+                'success' => false,
+                'message' => __( 'License key is required.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $api_url = WOO_NALDA_SYNC_LICENSE_API_URL . '/nalda/csv-uploads';
+
+        $response = wp_remote_get( add_query_arg( array(
+            'per_page' => absint( $per_page ),
+            'page'     => absint( $page ),
+        ), $api_url ), array(
+            'timeout' => 30,
+            'headers' => array(
+                'X-License-Key' => $license_key,
+                'Accept'        => 'application/json',
+            ),
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            $this->log( 'Failed to fetch upload history: ' . $response->get_error_message() );
+            return array(
+                'success' => false,
+                'message' => sprintf( __( 'Failed to fetch upload history: %s', 'woo-nalda-sync' ), $response->get_error_message() ),
+            );
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+        $body        = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( $status_code === 200 ) {
+            return array(
+                'success' => true,
+                'data'    => isset( $body['data'] ) ? $body['data'] : array(),
+                'meta'    => isset( $body['meta'] ) ? $body['meta'] : array(),
+            );
+        }
+
+        $error_message = isset( $body['message'] ) ? $body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' );
+        $this->log( 'Failed to fetch upload history: ' . $error_message );
+
+        return array(
+            'success' => false,
+            'message' => $error_message,
+        );
+    }
+
+    /**
+     * Get status label for CSV upload.
+     *
+     * @param string $status Status key.
+     * @return string Localized status label.
+     */
+    public static function get_upload_status_label( $status ) {
+        $labels = array(
+            'pending'    => __( 'Pending', 'woo-nalda-sync' ),
+            'processing' => __( 'Processing', 'woo-nalda-sync' ),
+            'processed'  => __( 'Processed', 'woo-nalda-sync' ),
+            'failed'     => __( 'Failed', 'woo-nalda-sync' ),
+        );
+
+        return isset( $labels[ $status ] ) ? $labels[ $status ] : $status;
+    }
+
+    /**
+     * Get CSS class for upload status badge.
+     *
+     * @param string $status Status key.
+     * @return string CSS class suffix.
+     */
+    public static function get_upload_status_class( $status ) {
+        $classes = array(
+            'pending'    => 'warning',
+            'processing' => 'info',
+            'processed'  => 'success',
+            'failed'     => 'error',
+        );
+
+        return isset( $classes[ $status ] ) ? $classes[ $status ] : 'neutral';
+    }
 }

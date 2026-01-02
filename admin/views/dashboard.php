@@ -309,6 +309,70 @@ $setup_percentage = ( $setup_progress / 4 ) * 100;
         </div>
     </div>
 
+    <!-- CSV Upload History -->
+    <?php if ( $is_licensed && $sftp_configured ) : ?>
+    <div class="wns-card">
+        <div class="wns-card-header">
+            <h2>
+                <span class="dashicons dashicons-media-spreadsheet"></span>
+                <?php esc_html_e( 'CSV Upload History', 'woo-nalda-sync' ); ?>
+            </h2>
+            <button type="button" class="wns-btn wns-btn-secondary wns-btn-sm" id="wns-refresh-upload-history">
+                <span class="dashicons dashicons-update"></span>
+                <?php esc_html_e( 'Refresh', 'woo-nalda-sync' ); ?>
+            </button>
+        </div>
+        <div class="wns-card-body" id="wns-upload-history-container">
+            <!-- Loading State -->
+            <div id="wns-upload-history-loading" class="wns-loading-state">
+                <span class="wns-spinner"></span>
+                <span><?php esc_html_e( 'Loading upload history...', 'woo-nalda-sync' ); ?></span>
+            </div>
+
+            <!-- Empty State -->
+            <div id="wns-upload-history-empty" class="wns-empty-state" style="display: none;">
+                <span class="dashicons dashicons-media-spreadsheet"></span>
+                <p><?php esc_html_e( 'No CSV uploads yet.', 'woo-nalda-sync' ); ?></p>
+                <p class="wns-text-muted"><?php esc_html_e( 'Export products to see your upload history here.', 'woo-nalda-sync' ); ?></p>
+            </div>
+
+            <!-- Error State -->
+            <div id="wns-upload-history-error" class="wns-error-state" style="display: none;">
+                <span class="dashicons dashicons-warning"></span>
+                <p class="wns-error-message"></p>
+            </div>
+
+            <!-- Table -->
+            <table id="wns-upload-history-table" class="wns-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e( 'ID', 'woo-nalda-sync' ); ?></th>
+                        <th><?php esc_html_e( 'Status', 'woo-nalda-sync' ); ?></th>
+                        <th><?php esc_html_e( 'Domain', 'woo-nalda-sync' ); ?></th>
+                        <th><?php esc_html_e( 'Created', 'woo-nalda-sync' ); ?></th>
+                        <th><?php esc_html_e( 'Processed', 'woo-nalda-sync' ); ?></th>
+                        <th><?php esc_html_e( 'Error', 'woo-nalda-sync' ); ?></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="wns-upload-history-pagination" style="display: none;">
+                <button type="button" class="wns-btn wns-btn-secondary wns-btn-sm wns-pagination-btn wns-pagination-prev" data-page="1">
+                    <span class="dashicons dashicons-arrow-left-alt2"></span>
+                    <?php esc_html_e( 'Previous', 'woo-nalda-sync' ); ?>
+                </button>
+                <span class="wns-pagination-info"></span>
+                <button type="button" class="wns-btn wns-btn-secondary wns-btn-sm wns-pagination-btn wns-pagination-next" data-page="2">
+                    <?php esc_html_e( 'Next', 'woo-nalda-sync' ); ?>
+                    <span class="dashicons dashicons-arrow-right-alt2"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Setup Guide & Quick Links -->
     <div class="wns-grid wns-grid-2">
         <!-- Setup Checklist -->

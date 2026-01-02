@@ -2096,3 +2096,180 @@
     background: var(--wns-gray-100);
     color: var(--wns-gray-600);
 }
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+.wns-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.wns-table th,
+.wns-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--wns-gray-200);
+}
+
+.wns-table th {
+    background: var(--wns-gray-50);
+    font-weight: 600;
+    color: var(--wns-gray-700);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wns-table tbody tr:hover {
+    background: var(--wns-gray-50);
+}
+
+.wns-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   Upload History
+   ========================================================================== */
+
+#wns-upload-history-container {
+    min-height: 200px;
+}
+
+#wns-upload-history-loading,
+#wns-upload-history-empty,
+#wns-upload-history-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+#wns-upload-history-loading {
+    color: var(--wns-gray-500);
+}
+
+#wns-upload-history-loading .wns-spinner {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 12px;
+}
+
+#wns-upload-history-empty .dashicons,
+#wns-upload-history-error .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+}
+
+#wns-upload-history-empty .dashicons {
+    color: var(--wns-gray-300);
+}
+
+#wns-upload-history-error .dashicons {
+    color: var(--wns-danger);
+}
+
+#wns-upload-history-empty p,
+#wns-upload-history-error p {
+    margin: 0;
+    color: var(--wns-gray-600);
+}
+
+.wns-text-muted {
+    color: var(--wns-gray-400) !important;
+    font-size: 13px;
+}
+
+.wns-text-error {
+    color: var(--wns-danger);
+    font-size: 12px;
+}
+
+.wns-upload-history-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    border-top: 1px solid var(--wns-gray-200);
+    margin-top: 16px;
+}
+
+.wns-pagination-info {
+    font-size: 13px;
+    color: var(--wns-gray-500);
+}
+
+.wns-pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wns-pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.wns-pagination-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* Badge Styles for Status */
+.wns-badge-info {
+    background: var(--wns-info-light);
+    color: var(--wns-info);
+}
+
+.wns-badge-error {
+    background: var(--wns-danger-light);
+    color: var(--wns-danger);
+}
+
+/* Spin Animation */
+.wns-spin {
+    animation: wns-spin 1s linear infinite;
+}
+
+/* Loading State */
+.wns-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    color: var(--wns-gray-500);
+}
+
+.wns-loading-state .wns-spinner {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 12px;
+}
+
+/* Error State */
+.wns-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.wns-error-state .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--wns-danger);
+    margin-bottom: 16px;
+}

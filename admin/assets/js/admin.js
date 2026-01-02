@@ -462,6 +462,198 @@
     };
 
     /**
+     * Upload History Manager
+     */
+    const UploadHistoryManager = {
+        currentPage: 1,
+        perPage: 5,
+
+        init: function () {
+            this.bindEvents();
+            // Load history on init if container exists
+            if ($('#wns-upload-history-table').length) {
+                this.loadHistory();
+            }
+        },
+
+        bindEvents: function () {
+            // Refresh history
+            $(document).on('click', '#wns-refresh-upload-history', this.handleRefresh.bind(this));
+
+            // Pagination
+            $(document).on('click', '.wns-upload-history-pagination .wns-pagination-btn', this.handlePagination.bind(this));
+        },
+
+        loadHistory: function (page) {
+            const self = this;
+            const $container = $('#wns-upload-history-container');
+            const $table = $('#wns-upload-history-table');
+            const $loading = $('#wns-upload-history-loading');
+            const $empty = $('#wns-upload-history-empty');
+            const $error = $('#wns-upload-history-error');
+
+            if (!$container.length) {
+                return;
+            }
+
+            page = page || this.currentPage;
+
+            // Show loading state
+            $loading.show();
+            $table.hide();
+            $empty.hide();
+            $error.hide();
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_get_upload_history',
+                    nonce: wooNaldaSync.nonce,
+                    per_page: this.perPage,
+                    page: page
+                },
+                success: function (response) {
+                    $loading.hide();
+
+                    if (response.success) {
+                        const uploads = response.data.data || [];
+                        const meta = response.data.meta || {};
+
+                        if (uploads.length === 0) {
+                            $empty.show();
+                            self.updatePagination(meta);
+                        } else {
+                            self.renderTable(uploads);
+                            self.updatePagination(meta);
+                            $table.show();
+                        }
+                        self.currentPage = page;
+                    } else {
+                        $error.find('.wns-error-message').text(response.data.message || wooNaldaSync.strings.error);
+                        $error.show();
+                    }
+                },
+                error: function () {
+                    $loading.hide();
+                    $error.find('.wns-error-message').text(wooNaldaSync.strings.error);
+                    $error.show();
+                }
+            });
+        },
+
+        renderTable: function (uploads) {
+            const self = this;
+            const $tbody = $('#wns-upload-history-table tbody');
+            $tbody.empty();
+
+            uploads.forEach(function (upload) {
+                const statusClass = 'wns-badge-' + self.getStatusClass(upload.status);
+                const statusLabel = self.getStatusLabel(upload.status);
+                const createdAt = self.formatDate(upload.created_at);
+                const processedAt = upload.processed_at ? self.formatDate(upload.processed_at) : '—';
+
+                const $row = $('<tr>' +
+                    '<td>' + upload.id + '</td>' +
+                    '<td><span class="wns-badge wns-badge-sm ' + statusClass + '">' + statusLabel + '</span></td>' +
+                    '<td>' + self.escapeHtml(upload.domain) + '</td>' +
+                    '<td>' + createdAt + '</td>' +
+                    '<td>' + processedAt + '</td>' +
+                    '<td>' + (upload.error_message ? '<span class="wns-text-error">' + self.escapeHtml(upload.error_message) + '</span>' : '—') + '</td>' +
+                    '</tr>');
+
+                $tbody.append($row);
+            });
+        },
+
+        updatePagination: function (meta) {
+            const $pagination = $('.wns-upload-history-pagination');
+
+            if (!meta || !meta.total || meta.total <= this.perPage) {
+                $pagination.hide();
+                return;
+            }
+
+            const currentPage = meta.current_page || 1;
+            const lastPage = meta.last_page || 1;
+
+            $pagination.find('.wns-pagination-info').text(
+                wooNaldaSync.strings.pageInfo
+                    .replace('{current}', currentPage)
+                    .replace('{total}', lastPage)
+            );
+
+            $pagination.find('.wns-pagination-prev')
+                .prop('disabled', currentPage <= 1)
+                .data('page', currentPage - 1);
+
+            $pagination.find('.wns-pagination-next')
+                .prop('disabled', currentPage >= lastPage)
+                .data('page', currentPage + 1);
+
+            $pagination.show();
+        },
+
+        handleRefresh: function (e) {
+            e.preventDefault();
+            const $button = $(e.currentTarget);
+            const $icon = $button.find('.dashicons');
+            const self = this;
+
+            $icon.addClass('wns-spin');
+
+            this.loadHistory(1);
+
+            setTimeout(function () {
+                $icon.removeClass('wns-spin');
+            }, 1000);
+        },
+
+        handlePagination: function (e) {
+            e.preventDefault();
+            const $button = $(e.currentTarget);
+            const page = $button.data('page');
+
+            if (page && !$button.prop('disabled')) {
+                this.loadHistory(page);
+            }
+        },
+
+        getStatusClass: function (status) {
+            const classes = {
+                'pending': 'warning',
+                'processing': 'info',
+                'processed': 'success',
+                'failed': 'error'
+            };
+            return classes[status] || 'neutral';
+        },
+
+        getStatusLabel: function (status) {
+            const labels = {
+                'pending': wooNaldaSync.strings.statusPending || 'Pending',
+                'processing': wooNaldaSync.strings.statusProcessing || 'Processing',
+                'processed': wooNaldaSync.strings.statusProcessed || 'Processed',
+                'failed': wooNaldaSync.strings.statusFailed || 'Failed'
+            };
+            return labels[status] || status;
+        },
+
+        formatDate: function (dateString) {
+            if (!dateString) return '—';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        },
+
+        escapeHtml: function (text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    };
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function () {
@@ -469,6 +661,7 @@
         SettingsManager.init();
         SyncManager.init();
         ToggleSwitches.init();
+        UploadHistoryManager.init();
 
         // Restore active tab
         SettingsManager.restoreActiveTab();
