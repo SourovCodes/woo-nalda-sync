@@ -553,17 +553,72 @@
                 const createdAt = self.formatDate(upload.created_at);
                 const processedAt = upload.processed_at ? self.formatDate(upload.processed_at) : '—';
 
+                // Build error/action cell content
+                let actionCell = '';
+                if (upload.error_message) {
+                    actionCell = self.renderErrorMessage(upload.error_message);
+                } else if (upload.csv_url && upload.status === 'processed') {
+                    actionCell = '<a href="' + self.escapeHtml(upload.csv_url) + '" class="wns-btn wns-btn-sm wns-btn-secondary wns-download-btn" target="_blank" download>' +
+                        '<span class="dashicons dashicons-download"></span>' +
+                        '<span class="wns-btn-text">' + (wooNaldaSync.strings.download || 'Download') + '</span>' +
+                        '</a>';
+                } else if (upload.csv_url) {
+                    actionCell = '<a href="' + self.escapeHtml(upload.csv_url) + '" class="wns-btn wns-btn-sm wns-btn-outline wns-download-btn" target="_blank">' +
+                        '<span class="dashicons dashicons-visibility"></span>' +
+                        '<span class="wns-btn-text">' + (wooNaldaSync.strings.view || 'View') + '</span>' +
+                        '</a>';
+                } else {
+                    actionCell = '—';
+                }
+
                 const $row = $('<tr>' +
-                    '<td>' + upload.id + '</td>' +
-                    '<td><span class="wns-badge wns-badge-sm ' + statusClass + '">' + statusLabel + '</span></td>' +
-                    '<td>' + self.escapeHtml(upload.domain) + '</td>' +
-                    '<td>' + createdAt + '</td>' +
-                    '<td>' + processedAt + '</td>' +
-                    '<td>' + (upload.error_message ? '<span class="wns-text-error">' + self.escapeHtml(upload.error_message) + '</span>' : '—') + '</td>' +
+                    '<td data-label="ID">' + upload.id + '</td>' +
+                    '<td data-label="Status"><span class="wns-badge wns-badge-sm ' + statusClass + '">' + statusLabel + '</span></td>' +
+                    '<td data-label="Domain" class="wns-hide-mobile">' + self.escapeHtml(upload.domain) + '</td>' +
+                    '<td data-label="Created">' + createdAt + '</td>' +
+                    '<td data-label="Processed" class="wns-hide-mobile">' + processedAt + '</td>' +
+                    '<td data-label="Error / CSV" class="wns-action-cell">' + actionCell + '</td>' +
                     '</tr>');
 
                 $tbody.append($row);
             });
+
+            // Bind show more click events
+            $tbody.find('.wns-error-show-more').on('click', function (e) {
+                e.preventDefault();
+                const $container = $(this).closest('.wns-error-container');
+                $container.find('.wns-error-truncated').hide();
+                $container.find('.wns-error-full').show();
+            });
+
+            $tbody.find('.wns-error-show-less').on('click', function (e) {
+                e.preventDefault();
+                const $container = $(this).closest('.wns-error-container');
+                $container.find('.wns-error-full').hide();
+                $container.find('.wns-error-truncated').show();
+            });
+        },
+
+        renderErrorMessage: function (message) {
+            const maxLength = 50;
+            const escaped = this.escapeHtml(message);
+
+            if (message.length <= maxLength) {
+                return '<span class="wns-text-error">' + escaped + '</span>';
+            }
+
+            const truncated = this.escapeHtml(message.substring(0, maxLength)) + '...';
+
+            return '<div class="wns-error-container">' +
+                '<div class="wns-error-truncated">' +
+                '<span class="wns-text-error">' + truncated + '</span> ' +
+                '<button type="button" class="wns-error-show-more wns-link-btn">' + (wooNaldaSync.strings.showMore || 'Show more') + '</button>' +
+                '</div>' +
+                '<div class="wns-error-full" style="display: none;">' +
+                '<span class="wns-text-error">' + escaped + '</span> ' +
+                '<button type="button" class="wns-error-show-less wns-link-btn">' + (wooNaldaSync.strings.showLess || 'Show less') + '</button>' +
+                '</div>' +
+                '</div>';
         },
 
         updatePagination: function (meta) {

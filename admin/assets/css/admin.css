@@ -2273,3 +2273,152 @@
     color: var(--wns-danger);
     margin-bottom: 16px;
 }
+
+/* ==========================================================================
+   Table Responsive
+   ========================================================================== */
+
+.wns-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Download Button */
+.wns-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.wns-download-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.wns-btn-outline {
+    background: transparent;
+    border: 1px solid var(--wns-gray-300);
+    color: var(--wns-gray-600);
+}
+
+.wns-btn-outline:hover {
+    background: var(--wns-gray-50);
+    border-color: var(--wns-gray-400);
+}
+
+/* Error Message Truncation */
+.wns-error-container {
+    max-width: 200px;
+}
+
+.wns-error-truncated,
+.wns-error-full {
+    display: block;
+}
+
+.wns-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: var(--wns-primary);
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: underline;
+}
+
+.wns-link-btn:hover {
+    color: var(--wns-primary-hover);
+}
+
+.wns-action-cell {
+    min-width: 120px;
+}
+
+/* ==========================================================================
+   Upload History Mobile Responsive
+   ========================================================================== */
+
+@media (max-width: 782px) {
+    .wns-hide-mobile {
+        display: none !important;
+    }
+
+    .wns-table-responsive {
+        margin: 0 -16px;
+        padding: 0 16px;
+    }
+
+    #wns-upload-history-table {
+        font-size: 12px;
+    }
+
+    #wns-upload-history-table th,
+    #wns-upload-history-table td {
+        padding: 8px 10px;
+    }
+
+    .wns-upload-history-pagination {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .wns-pagination-btn {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .wns-download-btn .wns-btn-text {
+        display: none;
+    }
+
+    .wns-download-btn {
+        padding: 6px 8px;
+    }
+
+    .wns-download-btn .dashicons {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .wns-error-container {
+        max-width: 100px;
+    }
+
+    .wns-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .wns-card-header h2 {
+        font-size: 16px;
+    }
+
+    #wns-refresh-upload-history {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+
+    #wns-upload-history-table th,
+    #wns-upload-history-table td {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .wns-badge-sm {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+
+    .wns-error-container {
+        max-width: 80px;
+    }
+}

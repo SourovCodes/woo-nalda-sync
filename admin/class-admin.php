@@ -187,6 +187,10 @@ class Woo_Nalda_Sync_Admin {
                 'statusProcessing'  => __( 'Processing', 'woo-nalda-sync' ),
                 'statusProcessed'   => __( 'Processed', 'woo-nalda-sync' ),
                 'statusFailed'      => __( 'Failed', 'woo-nalda-sync' ),
+                'download'          => __( 'Download', 'woo-nalda-sync' ),
+                'view'              => __( 'View', 'woo-nalda-sync' ),
+                'showMore'          => __( 'Show more', 'woo-nalda-sync' ),
+                'showLess'          => __( 'Show less', 'woo-nalda-sync' ),
             ),
         ) );
     }

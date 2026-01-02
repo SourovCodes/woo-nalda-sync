@@ -343,19 +343,21 @@ $setup_percentage = ( $setup_progress / 4 ) * 100;
             </div>
 
             <!-- Table -->
-            <table id="wns-upload-history-table" class="wns-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th><?php esc_html_e( 'ID', 'woo-nalda-sync' ); ?></th>
-                        <th><?php esc_html_e( 'Status', 'woo-nalda-sync' ); ?></th>
-                        <th><?php esc_html_e( 'Domain', 'woo-nalda-sync' ); ?></th>
-                        <th><?php esc_html_e( 'Created', 'woo-nalda-sync' ); ?></th>
-                        <th><?php esc_html_e( 'Processed', 'woo-nalda-sync' ); ?></th>
-                        <th><?php esc_html_e( 'Error', 'woo-nalda-sync' ); ?></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="wns-table-responsive">
+                <table id="wns-upload-history-table" class="wns-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'ID', 'woo-nalda-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Status', 'woo-nalda-sync' ); ?></th>
+                            <th class="wns-hide-mobile"><?php esc_html_e( 'Domain', 'woo-nalda-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Created', 'woo-nalda-sync' ); ?></th>
+                            <th class="wns-hide-mobile"><?php esc_html_e( 'Processed', 'woo-nalda-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Error / CSV', 'woo-nalda-sync' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
 
             <!-- Pagination -->
             <div class="wns-upload-history-pagination" style="display: none;">
