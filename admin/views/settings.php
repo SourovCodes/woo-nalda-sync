@@ -148,18 +148,31 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
 
-        <!-- Export Settings -->
+        <!-- Product Sync Settings -->
         <div class="wns-card">
             <div class="wns-card-header">
                 <h2>
                     <span class="dashicons dashicons-media-spreadsheet"></span>
-                    <?php esc_html_e( 'Export Settings', 'woo-nalda-sync' ); ?>
+                    <?php esc_html_e( 'Product Sync Settings', 'woo-nalda-sync' ); ?>
                 </h2>
             </div>
             <div class="wns-card-body">
-                <p class="wns-section-description"><?php esc_html_e( 'Configure how and when the CSV export should be generated.', 'woo-nalda-sync' ); ?></p>
+                <p class="wns-section-description"><?php esc_html_e( 'Configure how products are exported to Nalda Marketplace via CSV upload.', 'woo-nalda-sync' ); ?></p>
                 
                 <div class="wns-settings-section">
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Product Sync', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Enable automatic product export to Nalda Marketplace.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <label class="wns-toggle">
+                                <input type="checkbox" name="product_sync_enabled" value="yes" <?php checked( isset( $settings['product_sync_enabled'] ) ? $settings['product_sync_enabled'] : 'no', 'yes' ); ?>>
+                                <span class="wns-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
                             <div class="wns-settings-row-label"><?php esc_html_e( 'Sync Schedule', 'woo-nalda-sync' ); ?></div>
@@ -229,34 +242,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
                         <div class="wns-settings-row-control">
                             <input type="number" name="return_period" class="wns-form-input" value="<?php echo esc_attr( isset( $settings['return_period'] ) ? $settings['return_period'] : '14' ); ?>" min="0" max="90">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sync Status -->
-        <div class="wns-card">
-            <div class="wns-card-header">
-                <h2>
-                    <span class="dashicons dashicons-controls-repeat"></span>
-                    <?php esc_html_e( 'Sync Status', 'woo-nalda-sync' ); ?>
-                </h2>
-            </div>
-            <div class="wns-card-body">
-                <p class="wns-section-description"><?php esc_html_e( 'Enable or disable the automatic sync feature.', 'woo-nalda-sync' ); ?></p>
-                
-                <div class="wns-settings-section">
-                    <div class="wns-settings-row">
-                        <div class="wns-settings-row-info">
-                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Automatic Sync', 'woo-nalda-sync' ); ?></div>
-                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Enable or disable automatic scheduled sync.', 'woo-nalda-sync' ); ?></p>
-                        </div>
-                        <div class="wns-settings-row-control">
-                            <label class="wns-toggle">
-                                <input type="checkbox" name="product_sync_enabled" value="yes" <?php checked( isset( $settings['product_sync_enabled'] ) ? $settings['product_sync_enabled'] : 'no', 'yes' ); ?>>
-                                <span class="wns-toggle-slider"></span>
-                            </label>
                         </div>
                     </div>
                 </div>
@@ -340,7 +325,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <p class="wns-settings-row-desc"><?php esc_html_e( 'Leave default unless instructed otherwise.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
-                            <input type="url" name="nalda_api_url" id="nalda_api_url" class="wns-form-input" value="<?php echo esc_attr( isset( $settings['nalda_api_url'] ) ? $settings['nalda_api_url'] : 'https://api.nalda.com' ); ?>">
+                            <input type="url" name="nalda_api_url" id="nalda_api_url" class="wns-form-input" value="<?php echo esc_attr( isset( $settings['nalda_api_url'] ) ? $settings['nalda_api_url'] : 'https://sellers-api.nalda.com' ); ?>">
                         </div>
                     </div>
                 </div>

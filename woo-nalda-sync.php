@@ -285,7 +285,7 @@ final class Woo_Nalda_Sync {
             
             // Nalda API Settings
             'nalda_api_key'          => '',
-            'nalda_api_url'          => 'https://api.nalda.com',
+            'nalda_api_url'          => 'https://sellers-api.nalda.com',
             
             // Advanced
             'log_enabled'            => 'yes',

@@ -22,7 +22,7 @@ class Woo_Nalda_Sync_Order_Sync {
      *
      * @var string
      */
-    const NALDA_API_URL = 'https://api.nalda.com';
+    const NALDA_API_URL = 'https://sellers-api.nalda.com';
 
     /**
      * License Manager instance.

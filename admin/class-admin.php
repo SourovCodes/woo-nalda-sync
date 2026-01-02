@@ -237,7 +237,7 @@ class Woo_Nalda_Sync_Admin {
             
             // Nalda API Settings
             'nalda_api_key'          => isset( $data['nalda_api_key'] ) ? sanitize_text_field( $data['nalda_api_key'] ) : '',
-            'nalda_api_url'          => isset( $data['nalda_api_url'] ) ? esc_url_raw( $data['nalda_api_url'] ) : 'https://api.nalda.com',
+            'nalda_api_url'          => isset( $data['nalda_api_url'] ) ? esc_url_raw( $data['nalda_api_url'] ) : 'https://sellers-api.nalda.com',
             
             // Advanced
             'log_enabled'            => isset( $data['log_enabled'] ) ? 'yes' : 'no',
