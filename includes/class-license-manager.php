@@ -1,0 +1,432 @@
+<?php
+/**
+ * License Manager Class
+ *
+ * Handles license activation, validation, and management.
+ *
+ * @package Woo_Nalda_Sync
+ */
+
+// Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+/**
+ * License Manager class.
+ */
+class Woo_Nalda_Sync_License_Manager {
+
+    /**
+     * License option key.
+     *
+     * @var string
+     */
+    const LICENSE_KEY_OPTION = 'woo_nalda_sync_license_key';
+
+    /**
+     * License data option key.
+     *
+     * @var string
+     */
+    const LICENSE_DATA_OPTION = 'woo_nalda_sync_license_data';
+
+    /**
+     * Last validation option key.
+     *
+     * @var string
+     */
+    const LAST_VALIDATION_OPTION = 'woo_nalda_sync_last_validation';
+
+    /**
+     * Validation interval in seconds (24 hours).
+     *
+     * @var int
+     */
+    const VALIDATION_INTERVAL = 86400;
+
+    /**
+     * API base URL.
+     *
+     * @var string
+     */
+    private $api_url;
+
+    /**
+     * Product slug.
+     *
+     * @var string
+     */
+    private $product_slug;
+
+    /**
+     * Cached license data.
+     *
+     * @var array|null
+     */
+    private $license_data = null;
+
+    /**
+     * Constructor.
+     */
+    public function __construct() {
+        $this->api_url      = WOO_NALDA_SYNC_LICENSE_API_URL;
+        $this->product_slug = WOO_NALDA_SYNC_PRODUCT_SLUG;
+
+        // Schedule daily validation.
+        add_action( 'woo_nalda_sync_daily_license_check', array( $this, 'validate_license' ) );
+
+        // Schedule if not scheduled.
+        if ( ! wp_next_scheduled( 'woo_nalda_sync_daily_license_check' ) ) {
+            wp_schedule_event( time(), 'daily', 'woo_nalda_sync_daily_license_check' );
+        }
+    }
+
+    /**
+     * Get current domain.
+     *
+     * @return string
+     */
+    public function get_domain() {
+        $domain = parse_url( home_url(), PHP_URL_HOST );
+        return $domain ? $domain : '';
+    }
+
+    /**
+     * Get stored license key.
+     *
+     * @return string
+     */
+    public function get_license_key() {
+        return get_option( self::LICENSE_KEY_OPTION, '' );
+    }
+
+    /**
+     * Get stored license data.
+     *
+     * @return array
+     */
+    public function get_license_data() {
+        if ( is_null( $this->license_data ) ) {
+            $this->license_data = get_option( self::LICENSE_DATA_OPTION, array() );
+        }
+        return $this->license_data;
+    }
+
+    /**
+     * Check if license is valid.
+     *
+     * @return bool
+     */
+    public function is_valid() {
+        $license_data = $this->get_license_data();
+
+        if ( empty( $license_data ) || ! isset( $license_data['status'] ) ) {
+            return false;
+        }
+
+        if ( $license_data['status'] !== 'active' ) {
+            return false;
+        }
+
+        // Check expiration.
+        if ( isset( $license_data['expires_at'] ) ) {
+            $expires_at = strtotime( $license_data['expires_at'] );
+            if ( $expires_at && $expires_at < time() ) {
+                return false;
+            }
+        }
+
+        // Check if validation is needed.
+        $last_validation = get_option( self::LAST_VALIDATION_OPTION, 0 );
+        if ( ( time() - $last_validation ) > self::VALIDATION_INTERVAL ) {
+            // Trigger background validation.
+            $this->validate_license();
+        }
+
+        return true;
+    }
+
+    /**
+     * Get license status.
+     *
+     * @return string
+     */
+    public function get_status() {
+        $license_data = $this->get_license_data();
+        return isset( $license_data['status'] ) ? $license_data['status'] : 'inactive';
+    }
+
+    /**
+     * Get expiration date.
+     *
+     * @return string|null
+     */
+    public function get_expiration_date() {
+        $license_data = $this->get_license_data();
+        return isset( $license_data['expires_at'] ) ? $license_data['expires_at'] : null;
+    }
+
+    /**
+     * Get days remaining.
+     *
+     * @return int|null
+     */
+    public function get_days_remaining() {
+        $license_data = $this->get_license_data();
+        return isset( $license_data['days_remaining'] ) ? (int) $license_data['days_remaining'] : null;
+    }
+
+    /**
+     * Activate license.
+     *
+     * @param string $license_key License key.
+     * @return array Response data.
+     */
+    public function activate( $license_key ) {
+        $response = $this->api_request( '/license/activate', array(
+            'license_key'  => sanitize_text_field( $license_key ),
+            'domain'       => $this->get_domain(),
+            'product_slug' => $this->product_slug,
+        ) );
+
+        if ( $this->is_success_response( $response ) ) {
+            // Store license key.
+            update_option( self::LICENSE_KEY_OPTION, sanitize_text_field( $license_key ) );
+
+            // Store license data.
+            $license_data = isset( $response['data'] ) ? $response['data'] : array();
+            $license_data['status'] = 'active';
+            update_option( self::LICENSE_DATA_OPTION, $license_data );
+            update_option( self::LAST_VALIDATION_OPTION, time() );
+
+            // Clear cache.
+            $this->license_data = $license_data;
+
+            return array(
+                'success' => true,
+                'message' => isset( $response['message'] ) ? $response['message'] : __( 'License activated successfully.', 'woo-nalda-sync' ),
+                'data'    => $license_data,
+            );
+        }
+
+        return array(
+            'success' => false,
+            'message' => isset( $response['message'] ) ? $response['message'] : __( 'Failed to activate license.', 'woo-nalda-sync' ),
+        );
+    }
+
+    /**
+     * Validate license.
+     *
+     * @return array Response data.
+     */
+    public function validate_license() {
+        $license_key = $this->get_license_key();
+
+        if ( empty( $license_key ) ) {
+            return array(
+                'success' => false,
+                'message' => __( 'No license key found.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $response = $this->api_request( '/license/validate', array(
+            'license_key'  => $license_key,
+            'domain'       => $this->get_domain(),
+            'product_slug' => $this->product_slug,
+        ) );
+
+        if ( $this->is_success_response( $response ) ) {
+            // Update license data.
+            $license_data = $this->get_license_data();
+            $license_data['status']         = 'active';
+            $license_data['expires_at']     = isset( $response['expires_at'] ) ? $response['expires_at'] : $license_data['expires_at'];
+            $license_data['days_remaining'] = isset( $response['days_remaining'] ) ? $response['days_remaining'] : $license_data['days_remaining'];
+
+            update_option( self::LICENSE_DATA_OPTION, $license_data );
+            update_option( self::LAST_VALIDATION_OPTION, time() );
+
+            // Clear cache.
+            $this->license_data = $license_data;
+
+            return array(
+                'success' => true,
+                'message' => isset( $response['message'] ) ? $response['message'] : __( 'License is valid.', 'woo-nalda-sync' ),
+                'data'    => $license_data,
+            );
+        }
+
+        // License is invalid - update status.
+        $license_data = $this->get_license_data();
+        $license_data['status'] = 'invalid';
+        update_option( self::LICENSE_DATA_OPTION, $license_data );
+        $this->license_data = $license_data;
+
+        return array(
+            'success' => false,
+            'message' => isset( $response['message'] ) ? $response['message'] : __( 'License validation failed.', 'woo-nalda-sync' ),
+        );
+    }
+
+    /**
+     * Deactivate license.
+     *
+     * @param string $reason Optional reason.
+     * @return array Response data.
+     */
+    public function deactivate( $reason = '' ) {
+        $license_key = $this->get_license_key();
+
+        if ( empty( $license_key ) ) {
+            return array(
+                'success' => false,
+                'message' => __( 'No license key found.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $request_data = array(
+            'license_key'  => $license_key,
+            'domain'       => $this->get_domain(),
+            'product_slug' => $this->product_slug,
+        );
+
+        if ( ! empty( $reason ) ) {
+            $request_data['reason'] = sanitize_text_field( $reason );
+        }
+
+        $response = $this->api_request( '/license/deactivate', $request_data );
+
+        if ( $this->is_success_response( $response ) ) {
+            // Clear license data.
+            delete_option( self::LICENSE_KEY_OPTION );
+            delete_option( self::LICENSE_DATA_OPTION );
+            delete_option( self::LAST_VALIDATION_OPTION );
+            $this->license_data = null;
+
+            return array(
+                'success' => true,
+                'message' => isset( $response['message'] ) ? $response['message'] : __( 'License deactivated successfully.', 'woo-nalda-sync' ),
+            );
+        }
+
+        return array(
+            'success' => false,
+            'message' => isset( $response['message'] ) ? $response['message'] : __( 'Failed to deactivate license.', 'woo-nalda-sync' ),
+        );
+    }
+
+    /**
+     * Get license status from API.
+     *
+     * @return array Response data.
+     */
+    public function get_status_from_api() {
+        $license_key = $this->get_license_key();
+
+        if ( empty( $license_key ) ) {
+            return array(
+                'success' => false,
+                'message' => __( 'No license key found.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $response = $this->api_request( '/license/status', array(
+            'license_key' => $license_key,
+        ) );
+
+        if ( isset( $response['data'] ) ) {
+            return array(
+                'success' => true,
+                'data'    => $response['data'],
+            );
+        }
+
+        return array(
+            'success' => false,
+            'message' => isset( $response['message'] ) ? $response['message'] : __( 'Failed to get license status.', 'woo-nalda-sync' ),
+        );
+    }
+
+    /**
+     * Make API request.
+     *
+     * @param string $endpoint API endpoint.
+     * @param array  $data     Request data.
+     * @return array Response data.
+     */
+    private function api_request( $endpoint, $data ) {
+        $response = wp_remote_post( $this->api_url . $endpoint, array(
+            'timeout'   => 30,
+            'headers'   => array(
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ),
+            'body'      => wp_json_encode( $data ),
+            'sslverify' => true,
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            return array(
+                'error'   => true,
+                'message' => $response->get_error_message(),
+            );
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+        $body        = wp_remote_retrieve_body( $response );
+        $data        = json_decode( $body, true );
+
+        if ( ! is_array( $data ) ) {
+            return array(
+                'error'   => true,
+                'message' => __( 'Invalid API response.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $data['status_code'] = $status_code;
+
+        return $data;
+    }
+
+    /**
+     * Check if response is successful.
+     *
+     * @param array $response API response.
+     * @return bool
+     */
+    private function is_success_response( $response ) {
+        if ( isset( $response['error'] ) && $response['error'] ) {
+            return false;
+        }
+
+        if ( isset( $response['status_code'] ) && $response['status_code'] === 200 ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Mask license key for display.
+     *
+     * @param string $license_key License key.
+     * @return string Masked license key.
+     */
+    public function mask_license_key( $license_key = '' ) {
+        if ( empty( $license_key ) ) {
+            $license_key = $this->get_license_key();
+        }
+
+        if ( empty( $license_key ) ) {
+            return '';
+        }
+
+        $length = strlen( $license_key );
+        if ( $length <= 8 ) {
+            return str_repeat( '*', $length );
+        }
+
+        return substr( $license_key, 0, 4 ) . str_repeat( '*', $length - 8 ) . substr( $license_key, -4 );
+    }
+}

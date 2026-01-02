@@ -1,0 +1,1031 @@
+/**
+ * WooCommerce Nalda Sync - Admin Styles
+ *
+ * Modern, premium styling for the admin interface.
+ */
+
+/* ==========================================================================
+   CSS Variables
+   ========================================================================== */
+
+:root {
+    --wns-primary: #6366f1;
+    --wns-primary-hover: #4f46e5;
+    --wns-primary-light: #eef2ff;
+    --wns-secondary: #64748b;
+    --wns-success: #10b981;
+    --wns-success-light: #d1fae5;
+    --wns-warning: #f59e0b;
+    --wns-warning-light: #fef3c7;
+    --wns-danger: #ef4444;
+    --wns-danger-light: #fee2e2;
+    --wns-info: #3b82f6;
+    --wns-info-light: #dbeafe;
+    --wns-dark: #1e293b;
+    --wns-gray-50: #f8fafc;
+    --wns-gray-100: #f1f5f9;
+    --wns-gray-200: #e2e8f0;
+    --wns-gray-300: #cbd5e1;
+    --wns-gray-400: #94a3b8;
+    --wns-gray-500: #64748b;
+    --wns-gray-600: #475569;
+    --wns-gray-700: #334155;
+    --wns-gray-800: #1e293b;
+    --wns-gray-900: #0f172a;
+    --wns-border-radius: 12px;
+    --wns-border-radius-sm: 8px;
+    --wns-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --wns-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --wns-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --wns-transition: all 0.2s ease;
+}
+
+/* ==========================================================================
+   Layout & Wrapper
+   ========================================================================== */
+
+.wns-wrap {
+    margin: 20px 20px 20px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.wns-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--wns-gray-200);
+}
+
+.wns-header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.wns-logo {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--wns-primary) 0%, var(--wns-primary-hover) 100%);
+    border-radius: var(--wns-border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    box-shadow: var(--wns-shadow-md);
+}
+
+.wns-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+}
+
+.wns-header p {
+    margin: 4px 0 0;
+    color: var(--wns-gray-500);
+    font-size: 14px;
+}
+
+.wns-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wns-version {
+    background: var(--wns-gray-100);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--wns-gray-600);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+
+.wns-card {
+    background: white;
+    border-radius: var(--wns-border-radius);
+    box-shadow: var(--wns-shadow);
+    margin-bottom: 24px;
+    overflow: hidden;
+    border: 1px solid var(--wns-gray-200);
+}
+
+.wns-card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--wns-gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wns-card-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wns-card-header h2 .dashicons {
+    color: var(--wns-primary);
+}
+
+.wns-card-body {
+    padding: 24px;
+}
+
+.wns-card-footer {
+    padding: 16px 24px;
+    background: var(--wns-gray-50);
+    border-top: 1px solid var(--wns-gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* ==========================================================================
+   Grid Layout
+   ========================================================================== */
+
+.wns-grid {
+    display: grid;
+    gap: 24px;
+}
+
+.wns-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.wns-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.wns-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1200px) {
+    .wns-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 782px) {
+
+    .wns-grid-2,
+    .wns-grid-3,
+    .wns-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.wns-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--wns-border-radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: var(--wns-transition);
+    text-decoration: none;
+    line-height: 1.4;
+}
+
+.wns-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--wns-primary-light);
+}
+
+.wns-btn-primary {
+    background: linear-gradient(135deg, var(--wns-primary) 0%, var(--wns-primary-hover) 100%);
+    color: white;
+    box-shadow: var(--wns-shadow);
+}
+
+.wns-btn-primary:hover {
+    background: linear-gradient(135deg, var(--wns-primary-hover) 0%, #4338ca 100%);
+    transform: translateY(-1px);
+    box-shadow: var(--wns-shadow-md);
+    color: white;
+}
+
+.wns-btn-secondary {
+    background: white;
+    color: var(--wns-gray-700);
+    border: 1px solid var(--wns-gray-300);
+}
+
+.wns-btn-secondary:hover {
+    background: var(--wns-gray-50);
+    border-color: var(--wns-gray-400);
+    color: var(--wns-gray-900);
+}
+
+.wns-btn-success {
+    background: linear-gradient(135deg, var(--wns-success) 0%, #059669 100%);
+    color: white;
+}
+
+.wns-btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+}
+
+.wns-btn-danger {
+    background: linear-gradient(135deg, var(--wns-danger) 0%, #dc2626 100%);
+    color: white;
+}
+
+.wns-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+}
+
+.wns-btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.wns-btn-lg {
+    padding: 14px 28px;
+    font-size: 16px;
+}
+
+.wns-btn:disabled,
+.wns-btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.wns-btn .spinner {
+    margin: 0;
+}
+
+/* ==========================================================================
+   Form Elements
+   ========================================================================== */
+
+.wns-form-group {
+    margin-bottom: 20px;
+}
+
+.wns-form-group:last-child {
+    margin-bottom: 0;
+}
+
+.wns-form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wns-gray-700);
+}
+
+.wns-form-label .required {
+    color: var(--wns-danger);
+}
+
+.wns-form-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--wns-gray-500);
+}
+
+.wns-form-input,
+.wns-form-select,
+.wns-form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1px solid var(--wns-gray-300);
+    border-radius: var(--wns-border-radius-sm);
+    background: white;
+    color: var(--wns-gray-900);
+    transition: var(--wns-transition);
+    box-sizing: border-box;
+}
+
+.wns-form-input:focus,
+.wns-form-select:focus,
+.wns-form-textarea:focus {
+    outline: none;
+    border-color: var(--wns-primary);
+    box-shadow: 0 0 0 3px var(--wns-primary-light);
+}
+
+.wns-form-input::placeholder {
+    color: var(--wns-gray-400);
+}
+
+.wns-form-input.is-invalid {
+    border-color: var(--wns-danger);
+}
+
+.wns-form-input.is-invalid:focus {
+    box-shadow: 0 0 0 3px var(--wns-danger-light);
+}
+
+.wns-form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+.wns-form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Toggle Switch */
+.wns-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.wns-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.wns-toggle-slider {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    background: var(--wns-gray-300);
+    border-radius: 26px;
+    transition: var(--wns-transition);
+}
+
+.wns-toggle-slider::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--wns-transition);
+    box-shadow: var(--wns-shadow);
+}
+
+.wns-toggle input:checked+.wns-toggle-slider {
+    background: var(--wns-primary);
+}
+
+.wns-toggle input:checked+.wns-toggle-slider::before {
+    transform: translateX(22px);
+}
+
+.wns-toggle input:focus+.wns-toggle-slider {
+    box-shadow: 0 0 0 3px var(--wns-primary-light);
+}
+
+.wns-toggle-label {
+    font-size: 14px;
+    color: var(--wns-gray-700);
+}
+
+/* Input Group */
+.wns-input-group {
+    display: flex;
+    gap: 0;
+}
+
+.wns-input-group .wns-form-input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.wns-input-group .wns-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* ==========================================================================
+   License Card
+   ========================================================================== */
+
+.wns-license-status {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--wns-gray-50) 0%, white 100%);
+    border-radius: var(--wns-border-radius);
+    border: 1px solid var(--wns-gray-200);
+}
+
+.wns-license-status.is-active {
+    background: linear-gradient(135deg, var(--wns-success-light) 0%, white 100%);
+    border-color: var(--wns-success);
+}
+
+.wns-license-status.is-inactive {
+    background: linear-gradient(135deg, var(--wns-warning-light) 0%, white 100%);
+    border-color: var(--wns-warning);
+}
+
+.wns-license-status.is-expired {
+    background: linear-gradient(135deg, var(--wns-danger-light) 0%, white 100%);
+    border-color: var(--wns-danger);
+}
+
+.wns-license-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.wns-license-status.is-active .wns-license-icon {
+    background: var(--wns-success);
+    color: white;
+}
+
+.wns-license-status.is-inactive .wns-license-icon {
+    background: var(--wns-warning);
+    color: white;
+}
+
+.wns-license-status.is-expired .wns-license-icon {
+    background: var(--wns-danger);
+    color: white;
+}
+
+.wns-license-info {
+    flex: 1;
+}
+
+.wns-license-info h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+}
+
+.wns-license-info p {
+    margin: 0;
+    color: var(--wns-gray-600);
+    font-size: 14px;
+}
+
+.wns-license-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.wns-license-detail {
+    padding: 16px;
+    background: var(--wns-gray-50);
+    border-radius: var(--wns-border-radius-sm);
+    border: 1px solid var(--wns-gray-100);
+}
+
+.wns-license-detail-label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--wns-gray-500);
+    margin-bottom: 4px;
+}
+
+.wns-license-detail-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+    word-break: break-all;
+}
+
+/* ==========================================================================
+   Stats Cards
+   ========================================================================== */
+
+.wns-stat-card {
+    background: white;
+    border-radius: var(--wns-border-radius);
+    padding: 24px;
+    border: 1px solid var(--wns-gray-200);
+    box-shadow: var(--wns-shadow);
+    transition: var(--wns-transition);
+}
+
+.wns-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--wns-shadow-md);
+}
+
+.wns-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--wns-border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.wns-stat-icon.primary {
+    background: var(--wns-primary-light);
+    color: var(--wns-primary);
+}
+
+.wns-stat-icon.success {
+    background: var(--wns-success-light);
+    color: var(--wns-success);
+}
+
+.wns-stat-icon.warning {
+    background: var(--wns-warning-light);
+    color: var(--wns-warning);
+}
+
+.wns-stat-icon.info {
+    background: var(--wns-info-light);
+    color: var(--wns-info);
+}
+
+.wns-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--wns-gray-900);
+    margin-bottom: 4px;
+}
+
+.wns-stat-label {
+    font-size: 14px;
+    color: var(--wns-gray-500);
+}
+
+/* ==========================================================================
+   Settings Sections
+   ========================================================================== */
+
+.wns-settings-section {
+    margin-bottom: 32px;
+}
+
+.wns-settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.wns-settings-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--wns-gray-500);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--wns-gray-200);
+}
+
+.wns-settings-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--wns-gray-100);
+}
+
+.wns-settings-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.wns-settings-row-info {
+    flex: 1;
+    padding-right: 24px;
+}
+
+.wns-settings-row-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wns-gray-900);
+    margin-bottom: 4px;
+}
+
+.wns-settings-row-desc {
+    font-size: 13px;
+    color: var(--wns-gray-500);
+    margin: 0;
+}
+
+.wns-settings-row-control {
+    flex-shrink: 0;
+    min-width: 200px;
+}
+
+.wns-settings-row-control .wns-form-input,
+.wns-settings-row-control .wns-form-select {
+    width: 200px;
+}
+
+/* ==========================================================================
+   Badges
+   ========================================================================== */
+
+.wns-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 20px;
+}
+
+.wns-badge-success {
+    background: var(--wns-success-light);
+    color: var(--wns-success);
+}
+
+.wns-badge-warning {
+    background: var(--wns-warning-light);
+    color: #b45309;
+}
+
+.wns-badge-danger {
+    background: var(--wns-danger-light);
+    color: var(--wns-danger);
+}
+
+.wns-badge-info {
+    background: var(--wns-info-light);
+    color: var(--wns-info);
+}
+
+.wns-badge-secondary {
+    background: var(--wns-gray-100);
+    color: var(--wns-gray-600);
+}
+
+/* ==========================================================================
+   Alerts
+   ========================================================================== */
+
+.wns-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--wns-border-radius-sm);
+    margin-bottom: 20px;
+}
+
+.wns-alert-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+}
+
+.wns-alert-content {
+    flex: 1;
+}
+
+.wns-alert-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.wns-alert-message {
+    font-size: 14px;
+    margin: 0;
+}
+
+.wns-alert-success {
+    background: var(--wns-success-light);
+    border: 1px solid var(--wns-success);
+    color: #065f46;
+}
+
+.wns-alert-warning {
+    background: var(--wns-warning-light);
+    border: 1px solid var(--wns-warning);
+    color: #92400e;
+}
+
+.wns-alert-danger {
+    background: var(--wns-danger-light);
+    border: 1px solid var(--wns-danger);
+    color: #991b1b;
+}
+
+.wns-alert-info {
+    background: var(--wns-info-light);
+    border: 1px solid var(--wns-info);
+    color: #1e40af;
+}
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+
+.wns-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--wns-gray-100);
+    border-radius: var(--wns-border-radius-sm);
+    margin-bottom: 24px;
+}
+
+.wns-tab {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wns-gray-600);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--wns-transition);
+    text-align: center;
+}
+
+.wns-tab:hover {
+    color: var(--wns-gray-900);
+}
+
+.wns-tab.active {
+    background: white;
+    color: var(--wns-primary);
+    box-shadow: var(--wns-shadow);
+}
+
+.wns-tab-content {
+    display: none;
+}
+
+.wns-tab-content.active {
+    display: block;
+}
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+
+.wns-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--wns-gray-900);
+    color: white;
+    border-radius: var(--wns-border-radius-sm);
+    box-shadow: var(--wns-shadow-lg);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.wns-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.wns-toast-success {
+    background: var(--wns-success);
+}
+
+.wns-toast-error {
+    background: var(--wns-danger);
+}
+
+.wns-toast-warning {
+    background: var(--wns-warning);
+    color: var(--wns-gray-900);
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+
+.wns-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.wns-empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: var(--wns-gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--wns-gray-400);
+}
+
+.wns-empty-state h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+}
+
+.wns-empty-state p {
+    margin: 0 0 24px;
+    color: var(--wns-gray-500);
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.wns-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wns-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: wns-spin 0.6s linear infinite;
+}
+
+@keyframes wns-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 782px) {
+    .wns-wrap {
+        margin: 10px;
+    }
+
+    .wns-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .wns-header-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .wns-license-status {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .wns-license-details {
+        grid-template-columns: 1fr;
+    }
+
+    .wns-settings-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .wns-settings-row-info {
+        padding-right: 0;
+    }
+
+    .wns-settings-row-control {
+        width: 100%;
+    }
+
+    .wns-settings-row-control .wns-form-input,
+    .wns-settings-row-control .wns-form-select {
+        width: 100%;
+    }
+
+    .wns-card-footer {
+        flex-direction: column;
+    }
+
+    .wns-card-footer .wns-btn {
+        width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Pro Feature Lock
+   ========================================================================== */
+
+.wns-pro-feature {
+    position: relative;
+    overflow: hidden;
+}
+
+.wns-pro-feature::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(2px);
+    z-index: 1;
+}
+
+.wns-pro-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 2;
+    background: linear-gradient(135deg, var(--wns-primary) 0%, var(--wns-primary-hover) 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Dashboard Quick Actions
+   ========================================================================== */
+
+.wns-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.wns-quick-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border: 1px solid var(--wns-gray-200);
+    border-radius: var(--wns-border-radius-sm);
+    text-decoration: none;
+    color: var(--wns-gray-700);
+    transition: var(--wns-transition);
+}
+
+.wns-quick-action:hover {
+    border-color: var(--wns-primary);
+    color: var(--wns-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--wns-shadow);
+}
+
+.wns-quick-action .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.wns-quick-action span {
+    font-weight: 500;
+}
