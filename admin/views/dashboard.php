@@ -9,6 +9,20 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+// Get sync status.
+$product_sync_status = isset( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'];
+$order_sync_status   = isset( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'];
+
+// Format dates.
+$last_product_sync = isset( $stats['last_product_sync'] ) ? $stats['last_product_sync'] : null;
+$last_order_sync   = isset( $stats['last_order_sync'] ) ? $stats['last_order_sync'] : null;
+$products_synced   = isset( $stats['products_synced'] ) ? $stats['products_synced'] : 0;
+$orders_synced     = isset( $stats['orders_synced'] ) ? $stats['orders_synced'] : 0;
+
+// Format next sync times.
+$next_product_sync = isset( $next_sync_times['product_sync'] ) && $next_sync_times['product_sync'] ? $next_sync_times['product_sync'] : null;
+$next_order_sync   = isset( $next_sync_times['order_sync'] ) && $next_sync_times['order_sync'] ? $next_sync_times['order_sync'] : null;
 ?>
 
 <div class="wns-wrap">
@@ -61,28 +75,44 @@ if ( ! defined( 'ABSPATH' ) ) {
             <div class="wns-stat-icon primary">
                 <span class="dashicons dashicons-cart"></span>
             </div>
-            <div class="wns-stat-value">0</div>
+            <div class="wns-stat-value"><?php echo esc_html( number_format_i18n( $products_synced ) ); ?></div>
             <div class="wns-stat-label"><?php esc_html_e( 'Products Synced', 'woo-nalda-sync' ); ?></div>
         </div>
         <div class="wns-stat-card">
             <div class="wns-stat-icon success">
                 <span class="dashicons dashicons-clipboard"></span>
             </div>
-            <div class="wns-stat-value">0</div>
-            <div class="wns-stat-label"><?php esc_html_e( 'Orders Synced', 'woo-nalda-sync' ); ?></div>
+            <div class="wns-stat-value"><?php echo esc_html( number_format_i18n( $orders_synced ) ); ?></div>
+            <div class="wns-stat-label"><?php esc_html_e( 'Orders Imported', 'woo-nalda-sync' ); ?></div>
         </div>
         <div class="wns-stat-card">
             <div class="wns-stat-icon warning">
-                <span class="dashicons dashicons-update"></span>
+                <span class="dashicons dashicons-calendar-alt"></span>
             </div>
-            <div class="wns-stat-value">--</div>
-            <div class="wns-stat-label"><?php esc_html_e( 'Last Sync', 'woo-nalda-sync' ); ?></div>
+            <div class="wns-stat-value">
+                <?php
+                if ( $last_product_sync ) {
+                    echo esc_html( human_time_diff( strtotime( $last_product_sync ), current_time( 'timestamp' ) ) );
+                } else {
+                    echo '--';
+                }
+                ?>
+            </div>
+            <div class="wns-stat-label"><?php esc_html_e( 'Last Product Sync', 'woo-nalda-sync' ); ?></div>
         </div>
         <div class="wns-stat-card">
             <div class="wns-stat-icon info">
                 <span class="dashicons dashicons-yes-alt"></span>
             </div>
-            <div class="wns-stat-value"><?php echo $is_licensed ? esc_html__( 'Active', 'woo-nalda-sync' ) : esc_html__( 'Inactive', 'woo-nalda-sync' ); ?></div>
+            <div class="wns-stat-value">
+                <?php
+                if ( $product_sync_status || $order_sync_status ) {
+                    echo esc_html__( 'Active', 'woo-nalda-sync' );
+                } else {
+                    echo esc_html__( 'Inactive', 'woo-nalda-sync' );
+                }
+                ?>
+            </div>
             <div class="wns-stat-label"><?php esc_html_e( 'Sync Status', 'woo-nalda-sync' ); ?></div>
         </div>
     </div>
@@ -98,6 +128,25 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="wns-card-body">
                 <div class="wns-quick-actions" style="grid-template-columns: 1fr;">
+                    <?php if ( $is_licensed ) : ?>
+                        <button type="button" class="wns-quick-action wns-sync-btn" id="wns-run-product-sync">
+                            <span class="dashicons dashicons-upload"></span>
+                            <span><?php esc_html_e( 'Sync Products Now', 'woo-nalda-sync' ); ?></span>
+                        </button>
+                        <button type="button" class="wns-quick-action wns-sync-btn" id="wns-run-order-sync">
+                            <span class="dashicons dashicons-download"></span>
+                            <span><?php esc_html_e( 'Import Orders Now', 'woo-nalda-sync' ); ?></span>
+                        </button>
+                    <?php else : ?>
+                        <div class="wns-quick-action" style="opacity: 0.5; cursor: not-allowed;">
+                            <span class="dashicons dashicons-upload"></span>
+                            <span><?php esc_html_e( 'Sync Products Now', 'woo-nalda-sync' ); ?></span>
+                        </div>
+                        <div class="wns-quick-action" style="opacity: 0.5; cursor: not-allowed;">
+                            <span class="dashicons dashicons-download"></span>
+                            <span><?php esc_html_e( 'Import Orders Now', 'woo-nalda-sync' ); ?></span>
+                        </div>
+                    <?php endif; ?>
                     <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-quick-action">
                         <span class="dashicons dashicons-admin-generic"></span>
                         <span><?php esc_html_e( 'Configure Settings', 'woo-nalda-sync' ); ?></span>
@@ -106,18 +155,72 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <span class="dashicons dashicons-admin-network"></span>
                         <span><?php esc_html_e( 'Manage License', 'woo-nalda-sync' ); ?></span>
                     </a>
-                    <a href="#" class="wns-quick-action" onclick="return false;" style="opacity: 0.5; cursor: not-allowed;">
-                        <span class="dashicons dashicons-update"></span>
-                        <span><?php esc_html_e( 'Run Manual Sync', 'woo-nalda-sync' ); ?></span>
-                    </a>
-                    <a href="#" class="wns-quick-action" onclick="return false;" style="opacity: 0.5; cursor: not-allowed;">
-                        <span class="dashicons dashicons-media-text"></span>
-                        <span><?php esc_html_e( 'View Sync Logs', 'woo-nalda-sync' ); ?></span>
-                    </a>
                 </div>
             </div>
         </div>
 
+        <!-- Sync Schedule Info -->
+        <div class="wns-card">
+            <div class="wns-card-header">
+                <h2>
+                    <span class="dashicons dashicons-clock"></span>
+                    <?php esc_html_e( 'Sync Schedule', 'woo-nalda-sync' ); ?>
+                </h2>
+            </div>
+            <div class="wns-card-body">
+                <div class="wns-schedule-info">
+                    <div class="wns-schedule-item">
+                        <div class="wns-schedule-status <?php echo $product_sync_status ? 'active' : 'inactive'; ?>">
+                            <span class="dashicons dashicons-<?php echo $product_sync_status ? 'yes' : 'no'; ?>"></span>
+                        </div>
+                        <div class="wns-schedule-details">
+                            <div class="wns-schedule-label"><?php esc_html_e( 'Product Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-schedule-value">
+                                <?php if ( $product_sync_status && $next_product_sync ) : ?>
+                                    <?php
+                                    printf(
+                                        /* translators: %s: Time until next sync */
+                                        esc_html__( 'Next sync in %s', 'woo-nalda-sync' ),
+                                        human_time_diff( current_time( 'timestamp' ), $next_product_sync )
+                                    );
+                                    ?>
+                                <?php elseif ( $product_sync_status ) : ?>
+                                    <?php esc_html_e( 'Scheduled', 'woo-nalda-sync' ); ?>
+                                <?php else : ?>
+                                    <?php esc_html_e( 'Disabled', 'woo-nalda-sync' ); ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wns-schedule-item">
+                        <div class="wns-schedule-status <?php echo $order_sync_status ? 'active' : 'inactive'; ?>">
+                            <span class="dashicons dashicons-<?php echo $order_sync_status ? 'yes' : 'no'; ?>"></span>
+                        </div>
+                        <div class="wns-schedule-details">
+                            <div class="wns-schedule-label"><?php esc_html_e( 'Order Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-schedule-value">
+                                <?php if ( $order_sync_status && $next_order_sync ) : ?>
+                                    <?php
+                                    printf(
+                                        /* translators: %s: Time until next sync */
+                                        esc_html__( 'Next sync in %s', 'woo-nalda-sync' ),
+                                        human_time_diff( current_time( 'timestamp' ), $next_order_sync )
+                                    );
+                                    ?>
+                                <?php elseif ( $order_sync_status ) : ?>
+                                    <?php esc_html_e( 'Scheduled', 'woo-nalda-sync' ); ?>
+                                <?php else : ?>
+                                    <?php esc_html_e( 'Disabled', 'woo-nalda-sync' ); ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wns-grid wns-grid-2">
         <!-- Getting Started -->
         <div class="wns-card">
             <div class="wns-card-header">
@@ -130,74 +233,131 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <div class="wns-settings-section" style="margin-bottom: 0;">
                     <div class="wns-settings-row" style="padding-top: 0;">
                         <div class="wns-settings-row-info" style="padding-right: 0;">
-                            <div class="wns-settings-row-label" style="display: flex; align-items: center; gap: 8px;">
+                            <div class="wns-settings-row-label wns-step-label">
                                 <?php if ( $is_licensed ) : ?>
-                                    <span class="dashicons dashicons-yes-alt" style="color: var(--wns-success);"></span>
+                                    <span class="dashicons dashicons-yes-alt wns-step-done"></span>
                                 <?php else : ?>
-                                    <span class="dashicons dashicons-marker" style="color: var(--wns-gray-400);"></span>
+                                    <span class="wns-step-number">1</span>
                                 <?php endif; ?>
-                                <?php esc_html_e( '1. Activate your license', 'woo-nalda-sync' ); ?>
+                                <?php esc_html_e( 'Activate your license', 'woo-nalda-sync' ); ?>
                             </div>
-                            <p class="wns-settings-row-desc" style="margin-left: 28px;"><?php esc_html_e( 'Enter your license key to unlock all features.', 'woo-nalda-sync' ); ?></p>
+                            <p class="wns-settings-row-desc wns-step-desc"><?php esc_html_e( 'Enter your license key to unlock all features.', 'woo-nalda-sync' ); ?></p>
                         </div>
                     </div>
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info" style="padding-right: 0;">
-                            <div class="wns-settings-row-label" style="display: flex; align-items: center; gap: 8px;">
-                                <span class="dashicons dashicons-marker" style="color: var(--wns-gray-400);"></span>
-                                <?php esc_html_e( '2. Configure sync settings', 'woo-nalda-sync' ); ?>
+                            <div class="wns-settings-row-label wns-step-label">
+                                <?php if ( ! empty( $settings['sftp_host'] ) && ! empty( $settings['sftp_username'] ) ) : ?>
+                                    <span class="dashicons dashicons-yes-alt wns-step-done"></span>
+                                <?php else : ?>
+                                    <span class="wns-step-number">2</span>
+                                <?php endif; ?>
+                                <?php esc_html_e( 'Configure SFTP settings', 'woo-nalda-sync' ); ?>
                             </div>
-                            <p class="wns-settings-row-desc" style="margin-left: 28px;"><?php esc_html_e( 'Choose what data to sync and how often.', 'woo-nalda-sync' ); ?></p>
+                            <p class="wns-settings-row-desc wns-step-desc"><?php esc_html_e( 'Set up your SFTP connection for product exports.', 'woo-nalda-sync' ); ?></p>
                         </div>
                     </div>
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info" style="padding-right: 0;">
-                            <div class="wns-settings-row-label" style="display: flex; align-items: center; gap: 8px;">
-                                <span class="dashicons dashicons-marker" style="color: var(--wns-gray-400);"></span>
-                                <?php esc_html_e( '3. Connect to Nalda', 'woo-nalda-sync' ); ?>
+                            <div class="wns-settings-row-label wns-step-label">
+                                <?php if ( ! empty( $settings['nalda_api_key'] ) ) : ?>
+                                    <span class="dashicons dashicons-yes-alt wns-step-done"></span>
+                                <?php else : ?>
+                                    <span class="wns-step-number">3</span>
+                                <?php endif; ?>
+                                <?php esc_html_e( 'Connect to Nalda API', 'woo-nalda-sync' ); ?>
                             </div>
-                            <p class="wns-settings-row-desc" style="margin-left: 28px;"><?php esc_html_e( 'Add your Nalda API credentials to establish connection.', 'woo-nalda-sync' ); ?></p>
+                            <p class="wns-settings-row-desc wns-step-desc"><?php esc_html_e( 'Add your Nalda API key for order imports.', 'woo-nalda-sync' ); ?></p>
                         </div>
                     </div>
                     <div class="wns-settings-row" style="border-bottom: none; padding-bottom: 0;">
                         <div class="wns-settings-row-info" style="padding-right: 0;">
-                            <div class="wns-settings-row-label" style="display: flex; align-items: center; gap: 8px;">
-                                <span class="dashicons dashicons-marker" style="color: var(--wns-gray-400);"></span>
-                                <?php esc_html_e( '4. Start syncing', 'woo-nalda-sync' ); ?>
+                            <div class="wns-settings-row-label wns-step-label">
+                                <?php if ( $product_sync_status || $order_sync_status ) : ?>
+                                    <span class="dashicons dashicons-yes-alt wns-step-done"></span>
+                                <?php else : ?>
+                                    <span class="wns-step-number">4</span>
+                                <?php endif; ?>
+                                <?php esc_html_e( 'Enable automatic sync', 'woo-nalda-sync' ); ?>
                             </div>
-                            <p class="wns-settings-row-desc" style="margin-left: 28px;"><?php esc_html_e( 'Run your first sync to start keeping data in sync.', 'woo-nalda-sync' ); ?></p>
+                            <p class="wns-settings-row-desc wns-step-desc"><?php esc_html_e( 'Turn on scheduled syncing to keep data up to date.', 'woo-nalda-sync' ); ?></p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Recent Activity -->
-    <div class="wns-card">
-        <div class="wns-card-header">
-            <h2>
-                <span class="dashicons dashicons-backup"></span>
-                <?php esc_html_e( 'Recent Activity', 'woo-nalda-sync' ); ?>
-            </h2>
-        </div>
-        <div class="wns-card-body">
-            <div class="wns-empty-state">
-                <div class="wns-empty-state-icon">
-                    <span class="dashicons dashicons-clock"></span>
-                </div>
-                <h3><?php esc_html_e( 'No activity yet', 'woo-nalda-sync' ); ?></h3>
-                <p><?php esc_html_e( 'Your sync activity will appear here once you start syncing data.', 'woo-nalda-sync' ); ?></p>
-                <?php if ( $is_licensed ) : ?>
-                    <button class="wns-btn wns-btn-primary" disabled>
-                        <span class="dashicons dashicons-update"></span>
-                        <?php esc_html_e( 'Run First Sync', 'woo-nalda-sync' ); ?>
-                    </button>
+        <!-- Recent Activity -->
+        <div class="wns-card">
+            <div class="wns-card-header">
+                <h2>
+                    <span class="dashicons dashicons-backup"></span>
+                    <?php esc_html_e( 'Recent Activity', 'woo-nalda-sync' ); ?>
+                </h2>
+            </div>
+            <div class="wns-card-body">
+                <?php if ( $last_product_sync || $last_order_sync ) : ?>
+                    <div class="wns-activity-list">
+                        <?php if ( $last_product_sync ) : ?>
+                            <div class="wns-activity-item">
+                                <div class="wns-activity-icon success">
+                                    <span class="dashicons dashicons-upload"></span>
+                                </div>
+                                <div class="wns-activity-content">
+                                    <div class="wns-activity-title"><?php esc_html_e( 'Product Sync Completed', 'woo-nalda-sync' ); ?></div>
+                                    <div class="wns-activity-meta">
+                                        <?php
+                                        printf(
+                                            /* translators: 1: Number of products, 2: Time ago */
+                                            esc_html__( '%1$d products exported • %2$s ago', 'woo-nalda-sync' ),
+                                            $products_synced,
+                                            human_time_diff( strtotime( $last_product_sync ), current_time( 'timestamp' ) )
+                                        );
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <?php if ( $last_order_sync ) : ?>
+                            <div class="wns-activity-item">
+                                <div class="wns-activity-icon primary">
+                                    <span class="dashicons dashicons-download"></span>
+                                </div>
+                                <div class="wns-activity-content">
+                                    <div class="wns-activity-title"><?php esc_html_e( 'Order Sync Completed', 'woo-nalda-sync' ); ?></div>
+                                    <div class="wns-activity-meta">
+                                        <?php
+                                        printf(
+                                            /* translators: 1: Number of orders, 2: Time ago */
+                                            esc_html__( '%1$d orders imported • %2$s ago', 'woo-nalda-sync' ),
+                                            $orders_synced,
+                                            human_time_diff( strtotime( $last_order_sync ), current_time( 'timestamp' ) )
+                                        );
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 <?php else : ?>
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-license' ) ); ?>" class="wns-btn wns-btn-primary">
-                        <span class="dashicons dashicons-admin-network"></span>
-                        <?php esc_html_e( 'Activate License', 'woo-nalda-sync' ); ?>
-                    </a>
+                    <div class="wns-empty-state">
+                        <div class="wns-empty-state-icon">
+                            <span class="dashicons dashicons-clock"></span>
+                        </div>
+                        <h3><?php esc_html_e( 'No activity yet', 'woo-nalda-sync' ); ?></h3>
+                        <p><?php esc_html_e( 'Your sync activity will appear here once you start syncing data.', 'woo-nalda-sync' ); ?></p>
+                        <?php if ( $is_licensed ) : ?>
+                            <button type="button" class="wns-btn wns-btn-primary" id="wns-run-first-sync">
+                                <span class="dashicons dashicons-update"></span>
+                                <?php esc_html_e( 'Run First Sync', 'woo-nalda-sync' ); ?>
+                            </button>
+                        <?php else : ?>
+                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-license' ) ); ?>" class="wns-btn wns-btn-primary">
+                                <span class="dashicons dashicons-admin-network"></span>
+                                <?php esc_html_e( 'Activate License', 'woo-nalda-sync' ); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

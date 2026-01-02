@@ -25,6 +25,20 @@ class Woo_Nalda_Sync_Admin {
     private $license_manager;
 
     /**
+     * Product Sync instance.
+     *
+     * @var Woo_Nalda_Sync_Product_Sync
+     */
+    private $product_sync;
+
+    /**
+     * Order Sync instance.
+     *
+     * @var Woo_Nalda_Sync_Order_Sync
+     */
+    private $order_sync;
+
+    /**
      * Admin notices.
      *
      * @var array
@@ -35,9 +49,13 @@ class Woo_Nalda_Sync_Admin {
      * Constructor.
      *
      * @param Woo_Nalda_Sync_License_Manager $license_manager License manager instance.
+     * @param Woo_Nalda_Sync_Product_Sync    $product_sync    Product sync instance.
+     * @param Woo_Nalda_Sync_Order_Sync      $order_sync      Order sync instance.
      */
-    public function __construct( $license_manager ) {
+    public function __construct( $license_manager, $product_sync = null, $order_sync = null ) {
         $this->license_manager = $license_manager;
+        $this->product_sync    = $product_sync;
+        $this->order_sync      = $order_sync;
 
         $this->init_hooks();
     }
@@ -50,10 +68,20 @@ class Woo_Nalda_Sync_Admin {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
         add_action( 'admin_init', array( $this, 'handle_form_submissions' ) );
         add_action( 'admin_notices', array( $this, 'display_notices' ) );
+        
+        // License AJAX handlers.
         add_action( 'wp_ajax_woo_nalda_sync_activate_license', array( $this, 'ajax_activate_license' ) );
         add_action( 'wp_ajax_woo_nalda_sync_deactivate_license', array( $this, 'ajax_deactivate_license' ) );
         add_action( 'wp_ajax_woo_nalda_sync_validate_license', array( $this, 'ajax_validate_license' ) );
+        
+        // Settings AJAX handlers.
         add_action( 'wp_ajax_woo_nalda_sync_save_settings', array( $this, 'ajax_save_settings' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_validate_sftp', array( $this, 'ajax_validate_sftp' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_validate_nalda_api', array( $this, 'ajax_validate_nalda_api' ) );
+        
+        // Sync AJAX handlers.
+        add_action( 'wp_ajax_woo_nalda_sync_run_product_sync', array( $this, 'ajax_run_product_sync' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_run_order_sync', array( $this, 'ajax_run_order_sync' ) );
 
         // Plugin action links.
         add_filter( 'plugin_action_links_' . WOO_NALDA_SYNC_PLUGIN_BASENAME, array( $this, 'plugin_action_links' ) );
@@ -138,13 +166,20 @@ class Woo_Nalda_Sync_Admin {
             'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
             'nonce'     => wp_create_nonce( 'woo_nalda_sync_nonce' ),
             'strings'   => array(
-                'activating'    => __( 'Activating...', 'woo-nalda-sync' ),
-                'deactivating'  => __( 'Deactivating...', 'woo-nalda-sync' ),
-                'validating'    => __( 'Validating...', 'woo-nalda-sync' ),
-                'saving'        => __( 'Saving...', 'woo-nalda-sync' ),
-                'saved'         => __( 'Settings saved!', 'woo-nalda-sync' ),
-                'error'         => __( 'An error occurred.', 'woo-nalda-sync' ),
+                'activating'        => __( 'Activating...', 'woo-nalda-sync' ),
+                'deactivating'      => __( 'Deactivating...', 'woo-nalda-sync' ),
+                'validating'        => __( 'Validating...', 'woo-nalda-sync' ),
+                'saving'            => __( 'Saving...', 'woo-nalda-sync' ),
+                'saved'             => __( 'Settings saved!', 'woo-nalda-sync' ),
+                'error'             => __( 'An error occurred.', 'woo-nalda-sync' ),
                 'confirmDeactivate' => __( 'Are you sure you want to deactivate your license?', 'woo-nalda-sync' ),
+                'testing'           => __( 'Testing...', 'woo-nalda-sync' ),
+                'testConnection'    => __( 'Test Connection', 'woo-nalda-sync' ),
+                'syncing'           => __( 'Syncing...', 'woo-nalda-sync' ),
+                'syncProducts'      => __( 'Sync Products', 'woo-nalda-sync' ),
+                'syncOrders'        => __( 'Sync Orders', 'woo-nalda-sync' ),
+                'connectionSuccess' => __( 'Connection successful!', 'woo-nalda-sync' ),
+                'connectionFailed'  => __( 'Connection failed.', 'woo-nalda-sync' ),
             ),
         ) );
     }
@@ -178,17 +213,142 @@ class Woo_Nalda_Sync_Admin {
      */
     private function save_settings( $data ) {
         $settings = array(
-            'sync_enabled'           => isset( $data['sync_enabled'] ) ? 'yes' : 'no',
-            'sync_interval'          => isset( $data['sync_interval'] ) ? absint( $data['sync_interval'] ) : 15,
-            'sync_products'          => isset( $data['sync_products'] ) ? 'yes' : 'no',
-            'sync_orders'            => isset( $data['sync_orders'] ) ? 'yes' : 'no',
+            // SFTP Settings
+            'sftp_host'              => isset( $data['sftp_host'] ) ? sanitize_text_field( $data['sftp_host'] ) : '',
+            'sftp_port'              => isset( $data['sftp_port'] ) ? absint( $data['sftp_port'] ) : 22,
+            'sftp_username'          => isset( $data['sftp_username'] ) ? sanitize_text_field( $data['sftp_username'] ) : '',
+            'sftp_password'          => isset( $data['sftp_password'] ) ? $data['sftp_password'] : '',
+            
+            // Export Settings
+            'product_sync_schedule'  => isset( $data['product_sync_schedule'] ) ? sanitize_text_field( $data['product_sync_schedule'] ) : 'hourly',
+            'filename_pattern'       => isset( $data['filename_pattern'] ) ? sanitize_text_field( $data['filename_pattern'] ) : 'products_{date}.csv',
+            'batch_size'             => isset( $data['batch_size'] ) ? absint( $data['batch_size'] ) : 100,
+            
+            // Product Defaults
+            'default_delivery_time'  => isset( $data['default_delivery_time'] ) ? absint( $data['default_delivery_time'] ) : 3,
+            'return_period'          => isset( $data['return_period'] ) ? absint( $data['return_period'] ) : 14,
+            
+            // Sync Status
+            'product_sync_enabled'   => isset( $data['product_sync_enabled'] ) ? 'yes' : 'no',
+            
+            // Order Sync Settings
+            'order_sync_enabled'     => isset( $data['order_sync_enabled'] ) ? 'yes' : 'no',
+            'order_sync_schedule'    => isset( $data['order_sync_schedule'] ) ? sanitize_text_field( $data['order_sync_schedule'] ) : 'hourly',
+            
+            // Nalda API Settings
+            'nalda_api_key'          => isset( $data['nalda_api_key'] ) ? sanitize_text_field( $data['nalda_api_key'] ) : '',
+            'nalda_api_url'          => isset( $data['nalda_api_url'] ) ? esc_url_raw( $data['nalda_api_url'] ) : 'https://api.nalda.com',
+            
+            // Advanced
             'log_enabled'            => isset( $data['log_enabled'] ) ? 'yes' : 'no',
             'notification_email'     => isset( $data['notification_email'] ) ? sanitize_email( $data['notification_email'] ) : '',
-            'webhook_enabled'        => isset( $data['webhook_enabled'] ) ? 'yes' : 'no',
-            'api_timeout'            => isset( $data['api_timeout'] ) ? absint( $data['api_timeout'] ) : 30,
         );
 
         return woo_nalda_sync()->update_settings( $settings );
+    }
+
+    /**
+     * AJAX: Validate SFTP credentials.
+     */
+    public function ajax_validate_sftp() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        $credentials = array(
+            'sftp_host'     => isset( $_POST['sftp_host'] ) ? sanitize_text_field( wp_unslash( $_POST['sftp_host'] ) ) : '',
+            'sftp_port'     => isset( $_POST['sftp_port'] ) ? absint( $_POST['sftp_port'] ) : 22,
+            'sftp_username' => isset( $_POST['sftp_username'] ) ? sanitize_text_field( wp_unslash( $_POST['sftp_username'] ) ) : '',
+            'sftp_password' => isset( $_POST['sftp_password'] ) ? wp_unslash( $_POST['sftp_password'] ) : '',
+        );
+
+        if ( empty( $credentials['sftp_host'] ) || empty( $credentials['sftp_username'] ) || empty( $credentials['sftp_password'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Please fill in all SFTP fields.', 'woo-nalda-sync' ) ) );
+        }
+
+        $result = $this->product_sync->validate_sftp_credentials( $credentials );
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
+    }
+
+    /**
+     * AJAX: Validate Nalda API credentials.
+     */
+    public function ajax_validate_nalda_api() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        $api_key = isset( $_POST['nalda_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['nalda_api_key'] ) ) : '';
+        $api_url = isset( $_POST['nalda_api_url'] ) ? esc_url_raw( wp_unslash( $_POST['nalda_api_url'] ) ) : '';
+
+        if ( empty( $api_key ) ) {
+            wp_send_json_error( array( 'message' => __( 'Please enter your Nalda API key.', 'woo-nalda-sync' ) ) );
+        }
+
+        $result = $this->order_sync->validate_api_credentials( $api_key, $api_url );
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
+    }
+
+    /**
+     * AJAX: Run product sync manually.
+     */
+    public function ajax_run_product_sync() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        if ( ! $this->license_manager->is_valid() ) {
+            wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
+        }
+
+        $result = $this->product_sync->run_sync();
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
+    }
+
+    /**
+     * AJAX: Run order sync manually.
+     */
+    public function ajax_run_order_sync() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        if ( ! $this->license_manager->is_valid() ) {
+            wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
+        }
+
+        $range = isset( $_POST['range'] ) ? sanitize_text_field( wp_unslash( $_POST['range'] ) ) : 'today';
+        
+        $result = $this->order_sync->run_sync( $range );
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
     }
 
     /**
@@ -322,7 +482,17 @@ class Woo_Nalda_Sync_Admin {
      * Render dashboard page.
      */
     public function render_dashboard_page() {
-        $is_licensed = $this->license_manager->is_valid();
+        $is_licensed     = $this->license_manager->is_valid();
+        $settings        = woo_nalda_sync()->get_setting();
+        $stats           = woo_nalda_sync()->get_sync_stats();
+        $next_sync_times = woo_nalda_sync()->get_next_sync_times();
+        
+        // Get WooCommerce settings.
+        $wc_settings = array();
+        if ( class_exists( 'WooCommerce' ) ) {
+            $wc_settings = woo_nalda_sync()->get_woocommerce_settings();
+        }
+
         include WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/views/dashboard.php';
     }
 
@@ -330,8 +500,15 @@ class Woo_Nalda_Sync_Admin {
      * Render settings page.
      */
     public function render_settings_page() {
-        $settings = woo_nalda_sync()->get_setting();
+        $settings    = woo_nalda_sync()->get_setting();
         $is_licensed = $this->license_manager->is_valid();
+        
+        // Get WooCommerce settings.
+        $wc_settings = array();
+        if ( class_exists( 'WooCommerce' ) ) {
+            $wc_settings = woo_nalda_sync()->get_woocommerce_settings();
+        }
+
         include WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/views/settings.php';
     }
 

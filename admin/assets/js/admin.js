@@ -15,8 +15,15 @@
             // Remove existing toasts
             $('.wns-toast').remove();
 
+            const icons = {
+                success: 'yes',
+                error: 'warning',
+                warning: 'flag',
+                info: 'info'
+            };
+
             const toast = $('<div class="wns-toast wns-toast-' + type + '">' +
-                '<span class="dashicons dashicons-' + (type === 'success' ? 'yes' : 'warning') + '"></span>' +
+                '<span class="dashicons dashicons-' + (icons[type] || 'info') + '"></span>' +
                 '<span>' + message + '</span>' +
                 '</div>');
 
@@ -33,7 +40,7 @@
                 setTimeout(function () {
                     toast.remove();
                 }, 300);
-            }, 3000);
+            }, 3500);
         },
 
         success: function (message) {
@@ -46,8 +53,26 @@
 
         warning: function (message) {
             this.show(message, 'warning');
+        },
+
+        info: function (message) {
+            this.show(message, 'info');
         }
     };
+
+    /**
+     * Helper function to set button loading state
+     */
+    function setButtonLoading($button, loading, text) {
+        if (loading) {
+            $button.data('original-text', $button.html());
+            $button.prop('disabled', true).html(
+                '<span class="wns-spinner"></span> ' + (text || '')
+            );
+        } else {
+            $button.prop('disabled', false).html($button.data('original-text'));
+        }
+    }
 
     /**
      * License Manager
@@ -72,7 +97,6 @@
         handleActivate: function (e) {
             e.preventDefault();
 
-            const $form = $('#wns-license-form');
             const $button = $('#wns-activate-license');
             const licenseKey = $('#wns-license-key').val().trim();
 
@@ -81,7 +105,7 @@
                 return;
             }
 
-            this.setLoading($button, true, wooNaldaSync.strings.activating);
+            setButtonLoading($button, true, wooNaldaSync.strings.activating);
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
@@ -100,12 +124,12 @@
                         }, 1000);
                     } else {
                         Toast.error(response.data.message);
-                        LicenseManager.setLoading($button, false);
+                        setButtonLoading($button, false);
                     }
                 },
                 error: function () {
                     Toast.error(wooNaldaSync.strings.error);
-                    LicenseManager.setLoading($button, false);
+                    setButtonLoading($button, false);
                 }
             });
         },
@@ -119,7 +143,7 @@
 
             const $button = $(e.currentTarget);
 
-            this.setLoading($button, true, wooNaldaSync.strings.deactivating);
+            setButtonLoading($button, true, wooNaldaSync.strings.deactivating);
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
@@ -137,12 +161,12 @@
                         }, 1000);
                     } else {
                         Toast.error(response.data.message);
-                        LicenseManager.setLoading($button, false);
+                        setButtonLoading($button, false);
                     }
                 },
                 error: function () {
                     Toast.error(wooNaldaSync.strings.error);
-                    LicenseManager.setLoading($button, false);
+                    setButtonLoading($button, false);
                 }
             });
         },
@@ -152,7 +176,7 @@
 
             const $button = $(e.currentTarget);
 
-            this.setLoading($button, true, wooNaldaSync.strings.validating);
+            setButtonLoading($button, true, wooNaldaSync.strings.validating);
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
@@ -164,35 +188,24 @@
                 success: function (response) {
                     if (response.success) {
                         Toast.success(response.data.message);
-                        LicenseManager.setLoading($button, false);
+                        setButtonLoading($button, false);
                     } else {
                         Toast.error(response.data.message);
-                        // Reload page if license status changed (not a temporary error)
+                        // Reload page if license status changed
                         if (response.data && response.data.status_changed) {
                             setTimeout(function () {
                                 window.location.reload();
                             }, 1500);
                         } else {
-                            LicenseManager.setLoading($button, false);
+                            setButtonLoading($button, false);
                         }
                     }
                 },
                 error: function () {
                     Toast.error(wooNaldaSync.strings.error);
-                    LicenseManager.setLoading($button, false);
+                    setButtonLoading($button, false);
                 }
             });
-        },
-
-        setLoading: function ($button, loading, text) {
-            if (loading) {
-                $button.data('original-text', $button.html());
-                $button.prop('disabled', true).html(
-                    '<span class="wns-spinner"></span> ' + (text || '')
-                );
-            } else {
-                $button.prop('disabled', false).html($button.data('original-text'));
-            }
         }
     };
 
@@ -210,6 +223,12 @@
 
             // Tab navigation
             $(document).on('click', '.wns-tab', this.handleTabClick.bind(this));
+
+            // Test SFTP connection
+            $(document).on('click', '#wns-test-sftp', this.handleTestSftp.bind(this));
+
+            // Test Nalda API connection
+            $(document).on('click', '#wns-test-nalda-api', this.handleTestNaldaApi.bind(this));
         },
 
         handleSave: function (e) {
@@ -219,7 +238,7 @@
             const $button = $form.find('button[type="submit"]');
             const formData = $form.serialize();
 
-            this.setLoading($button, true, wooNaldaSync.strings.saving);
+            setButtonLoading($button, true, wooNaldaSync.strings.saving);
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
@@ -235,11 +254,11 @@
                     } else {
                         Toast.error(response.data.message);
                     }
-                    SettingsManager.setLoading($button, false);
+                    setButtonLoading($button, false);
                 },
                 error: function () {
                     Toast.error(wooNaldaSync.strings.error);
-                    SettingsManager.setLoading($button, false);
+                    setButtonLoading($button, false);
                 }
             });
         },
@@ -262,15 +281,68 @@
             localStorage.setItem('wns-active-tab', target);
         },
 
-        setLoading: function ($button, loading, text) {
-            if (loading) {
-                $button.data('original-text', $button.html());
-                $button.prop('disabled', true).html(
-                    '<span class="wns-spinner"></span> ' + (text || '')
-                );
-            } else {
-                $button.prop('disabled', false).html($button.data('original-text'));
-            }
+        handleTestSftp: function (e) {
+            e.preventDefault();
+
+            const $button = $(e.currentTarget);
+
+            setButtonLoading($button, true, wooNaldaSync.strings.testing);
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_validate_sftp',
+                    nonce: wooNaldaSync.nonce,
+                    sftp_host: $('#sftp_host').val(),
+                    sftp_port: $('#sftp_port').val(),
+                    sftp_username: $('#sftp_username').val(),
+                    sftp_password: $('#sftp_password').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Toast.success(response.data.message);
+                    } else {
+                        Toast.error(response.data.message);
+                    }
+                    setButtonLoading($button, false);
+                },
+                error: function () {
+                    Toast.error(wooNaldaSync.strings.error);
+                    setButtonLoading($button, false);
+                }
+            });
+        },
+
+        handleTestNaldaApi: function (e) {
+            e.preventDefault();
+
+            const $button = $(e.currentTarget);
+
+            setButtonLoading($button, true, wooNaldaSync.strings.testing);
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_validate_nalda_api',
+                    nonce: wooNaldaSync.nonce,
+                    nalda_api_key: $('#nalda_api_key').val(),
+                    nalda_api_url: $('#nalda_api_url').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Toast.success(response.data.message);
+                    } else {
+                        Toast.error(response.data.message);
+                    }
+                    setButtonLoading($button, false);
+                },
+                error: function () {
+                    Toast.error(wooNaldaSync.strings.error);
+                    setButtonLoading($button, false);
+                }
+            });
         },
 
         restoreActiveTab: function () {
@@ -278,6 +350,90 @@
             if (activeTab && $('.wns-tab[data-tab="' + activeTab + '"]').length) {
                 $('.wns-tab[data-tab="' + activeTab + '"]').trigger('click');
             }
+        }
+    };
+
+    /**
+     * Sync Manager
+     */
+    const SyncManager = {
+        init: function () {
+            this.bindEvents();
+        },
+
+        bindEvents: function () {
+            // Run product sync
+            $(document).on('click', '#wns-run-product-sync, #wns-run-first-sync', this.handleProductSync.bind(this));
+
+            // Run order sync
+            $(document).on('click', '#wns-run-order-sync', this.handleOrderSync.bind(this));
+        },
+
+        handleProductSync: function (e) {
+            e.preventDefault();
+
+            const $button = $(e.currentTarget);
+
+            setButtonLoading($button, true, wooNaldaSync.strings.syncing);
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_run_product_sync',
+                    nonce: wooNaldaSync.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Toast.success(response.data.message);
+                        // Reload page to update stats
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        Toast.error(response.data.message);
+                        setButtonLoading($button, false);
+                    }
+                },
+                error: function () {
+                    Toast.error(wooNaldaSync.strings.error);
+                    setButtonLoading($button, false);
+                }
+            });
+        },
+
+        handleOrderSync: function (e) {
+            e.preventDefault();
+
+            const $button = $(e.currentTarget);
+
+            setButtonLoading($button, true, wooNaldaSync.strings.syncing);
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_run_order_sync',
+                    nonce: wooNaldaSync.nonce,
+                    range: 'today'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Toast.success(response.data.message);
+                        // Reload page to update stats
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        Toast.error(response.data.message);
+                        setButtonLoading($button, false);
+                    }
+                },
+                error: function () {
+                    Toast.error(wooNaldaSync.strings.error);
+                    setButtonLoading($button, false);
+                }
+            });
         }
     };
 
@@ -311,6 +467,7 @@
     $(document).ready(function () {
         LicenseManager.init();
         SettingsManager.init();
+        SyncManager.init();
         ToggleSwitches.init();
 
         // Restore active tab
@@ -322,6 +479,16 @@
                 width: '100%'
             });
         }
+
+        // Password toggle visibility
+        $(document).on('click', '.wns-password-toggle', function () {
+            const $input = $(this).siblings('input');
+            const type = $input.attr('type') === 'password' ? 'text' : 'password';
+            $input.attr('type', type);
+            $(this).find('.dashicons')
+                .toggleClass('dashicons-visibility')
+                .toggleClass('dashicons-hidden');
+        });
     });
 
     // Expose Toast for external use
