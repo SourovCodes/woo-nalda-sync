@@ -1625,3 +1625,474 @@
     margin: 0;
     font-size: 14px;
 }
+
+/* ==========================================================================
+   Dashboard Status Cards
+   ========================================================================== */
+
+.wns-status-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.wns-status-card .wns-card-body {
+    padding: 20px;
+}
+
+.wns-status-card.wns-status-success {
+    border-color: var(--wns-success);
+    border-left-width: 4px;
+}
+
+.wns-status-card.wns-status-warning {
+    border-color: var(--wns-warning);
+    border-left-width: 4px;
+}
+
+.wns-status-card.wns-status-neutral {
+    border-color: var(--wns-gray-300);
+    border-left-width: 4px;
+}
+
+.wns-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.wns-status-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wns-status-success .wns-status-icon {
+    background: var(--wns-success-light);
+    color: var(--wns-success);
+}
+
+.wns-status-warning .wns-status-icon {
+    background: var(--wns-warning-light);
+    color: var(--wns-warning);
+}
+
+.wns-status-neutral .wns-status-icon {
+    background: var(--wns-gray-100);
+    color: var(--wns-gray-500);
+}
+
+.wns-status-icon .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.wns-status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.wns-status-success .wns-status-badge {
+    background: var(--wns-success-light);
+    color: var(--wns-success);
+}
+
+.wns-status-warning .wns-status-badge {
+    background: var(--wns-warning-light);
+    color: var(--wns-warning);
+}
+
+.wns-status-neutral .wns-status-badge {
+    background: var(--wns-gray-100);
+    color: var(--wns-gray-500);
+}
+
+.wns-status-title {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+}
+
+.wns-status-desc {
+    margin: 0;
+    font-size: 13px;
+    color: var(--wns-gray-500);
+    line-height: 1.4;
+}
+
+.wns-status-link {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wns-primary);
+    text-decoration: none;
+}
+
+.wns-status-link:hover {
+    color: var(--wns-primary-hover);
+}
+
+/* ==========================================================================
+   Sync Stats & Actions
+   ========================================================================== */
+
+.wns-sync-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--wns-gray-100);
+}
+
+.wns-sync-stat {
+    text-align: center;
+}
+
+.wns-sync-stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--wns-gray-900);
+    line-height: 1.2;
+}
+
+.wns-sync-stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--wns-gray-500);
+    margin-top: 4px;
+}
+
+.wns-sync-actions {
+    text-align: center;
+}
+
+.wns-sync-actions .wns-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.wns-sync-disabled-note {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: var(--wns-gray-500);
+}
+
+.wns-sync-toggle .wns-badge-sm {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+.wns-sync-toggle .wns-badge-sm .dashicons {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+    margin-right: 2px;
+}
+
+/* ==========================================================================
+   Progress Bar & Checklist
+   ========================================================================== */
+
+.wns-progress-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wns-primary);
+}
+
+.wns-progress-bar {
+    height: 8px;
+    background: var(--wns-gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.wns-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--wns-primary) 0%, var(--wns-success) 100%);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.wns-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.wns-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--wns-gray-100);
+}
+
+.wns-checklist-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.wns-checklist-item:first-child {
+    padding-top: 0;
+}
+
+.wns-checklist-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wns-checklist-item .wns-step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--wns-gray-100);
+    color: var(--wns-gray-500);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wns-checklist-item.completed .dashicons {
+    color: var(--wns-success);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.wns-checklist-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.wns-checklist-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wns-gray-900);
+    margin-bottom: 2px;
+}
+
+.wns-checklist-item.completed .wns-checklist-title {
+    color: var(--wns-gray-500);
+}
+
+.wns-checklist-desc {
+    font-size: 12px;
+    color: var(--wns-gray-500);
+}
+
+.wns-checklist-action {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--wns-primary);
+    text-decoration: none;
+    padding: 6px 12px;
+    background: var(--wns-primary-light);
+    border-radius: 6px;
+    transition: var(--wns-transition);
+}
+
+.wns-checklist-action:hover {
+    background: var(--wns-primary);
+    color: white;
+}
+
+/* ==========================================================================
+   Quick Links
+   ========================================================================== */
+
+.wns-quick-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.wns-quick-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--wns-gray-100);
+    text-decoration: none;
+    transition: var(--wns-transition);
+}
+
+.wns-quick-link:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.wns-quick-link:first-child {
+    padding-top: 0;
+}
+
+.wns-quick-link:hover {
+    color: var(--wns-primary);
+}
+
+.wns-quick-link-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--wns-gray-50);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--wns-transition);
+}
+
+.wns-quick-link:hover .wns-quick-link-icon {
+    background: var(--wns-primary-light);
+}
+
+.wns-quick-link-icon .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--wns-gray-500);
+    transition: var(--wns-transition);
+}
+
+.wns-quick-link:hover .wns-quick-link-icon .dashicons {
+    color: var(--wns-primary);
+}
+
+.wns-quick-link-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.wns-quick-link-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wns-gray-900);
+}
+
+.wns-quick-link-desc {
+    display: block;
+    font-size: 12px;
+    color: var(--wns-gray-500);
+}
+
+.wns-quick-link>.dashicons {
+    flex-shrink: 0;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--wns-gray-400);
+    transition: var(--wns-transition);
+}
+
+.wns-quick-link:hover>.dashicons {
+    color: var(--wns-primary);
+    transform: translateX(3px);
+}
+
+/* ==========================================================================
+   Resources Grid
+   ========================================================================== */
+
+.wns-resources-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1200px) {
+    .wns-resources-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .wns-resources-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wns-resource-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px 16px;
+    background: var(--wns-gray-50);
+    border-radius: var(--wns-border-radius-sm);
+    border: 1px solid var(--wns-gray-200);
+    text-decoration: none;
+    transition: var(--wns-transition);
+}
+
+.wns-resource-card:hover {
+    border-color: var(--wns-primary);
+    background: var(--wns-primary-light);
+    transform: translateY(-2px);
+}
+
+.wns-resource-card .dashicons {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: var(--wns-primary);
+    margin-bottom: 12px;
+}
+
+.wns-resource-card h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+}
+
+.wns-resource-card p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--wns-gray-500);
+}
+
+/* ==========================================================================
+   Alert Info Style
+   ========================================================================== */
+
+.wns-alert-info {
+    background: var(--wns-info-light);
+    border: 1px solid var(--wns-info);
+}
+
+.wns-alert-info .wns-alert-icon {
+    color: var(--wns-info);
+}
+
+.wns-alert-info .wns-alert-title {
+    color: var(--wns-info);
+}
+
+/* ==========================================================================
+   Badge Neutral Style
+   ========================================================================== */
+
+.wns-badge-neutral {
+    background: var(--wns-gray-100);
+    color: var(--wns-gray-600);
+}
