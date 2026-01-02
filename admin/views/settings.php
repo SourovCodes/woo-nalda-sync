@@ -204,19 +204,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                         <div class="wns-settings-row">
                             <div class="wns-settings-row-info">
-                                <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Webhooks', 'woo-nalda-sync' ); ?></div>
-                                <p class="wns-settings-row-desc"><?php esc_html_e( 'Enable real-time webhooks for instant sync.', 'woo-nalda-sync' ); ?></p>
-                            </div>
-                            <div class="wns-settings-row-control">
-                                <label class="wns-toggle">
-                                    <input type="checkbox" name="webhook_enabled" value="yes" <?php checked( isset( $settings['webhook_enabled'] ) ? $settings['webhook_enabled'] : 'no', 'yes' ); ?>>
-                                    <span class="wns-toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="wns-settings-row">
-                            <div class="wns-settings-row-info">
                                 <div class="wns-settings-row-label"><?php esc_html_e( 'API Timeout', 'woo-nalda-sync' ); ?></div>
                                 <p class="wns-settings-row-desc"><?php esc_html_e( 'Maximum time (in seconds) to wait for API responses.', 'woo-nalda-sync' ); ?></p>
                             </div>
