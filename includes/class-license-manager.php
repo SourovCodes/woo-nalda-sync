@@ -261,8 +261,9 @@ class Woo_Nalda_Sync_License_Manager {
         // In these cases, don't change the license status.
         if ( $this->is_temporary_error( $response ) ) {
             return array(
-                'success' => false,
-                'message' => isset( $response['message'] ) ? $response['message'] : __( 'Temporary error. Please try again later.', 'woo-nalda-sync' ),
+                'success'        => false,
+                'message'        => isset( $response['message'] ) ? $response['message'] : __( 'Temporary error. Please try again later.', 'woo-nalda-sync' ),
+                'status_changed' => false,
             );
         }
 
@@ -273,8 +274,9 @@ class Woo_Nalda_Sync_License_Manager {
         $this->license_data = $license_data;
 
         return array(
-            'success' => false,
-            'message' => isset( $response['message'] ) ? $response['message'] : __( 'License validation failed.', 'woo-nalda-sync' ),
+            'success'        => false,
+            'message'        => isset( $response['message'] ) ? $response['message'] : __( 'License validation failed.', 'woo-nalda-sync' ),
+            'status_changed' => true,
         );
     }
 

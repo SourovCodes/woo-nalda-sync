@@ -164,10 +164,18 @@
                 success: function (response) {
                     if (response.success) {
                         Toast.success(response.data.message);
+                        LicenseManager.setLoading($button, false);
                     } else {
                         Toast.error(response.data.message);
+                        // Reload page if license status changed (not a temporary error)
+                        if (response.data && response.data.status_changed) {
+                            setTimeout(function () {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            LicenseManager.setLoading($button, false);
+                        }
                     }
-                    LicenseManager.setLoading($button, false);
                 },
                 error: function () {
                     Toast.error(wooNaldaSync.strings.error);
