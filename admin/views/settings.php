@@ -170,31 +170,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         </div>
 
-                        <div class="wns-settings-row">
-                            <div class="wns-settings-row-info">
-                                <div class="wns-settings-row-label"><?php esc_html_e( 'Sync Inventory', 'woo-nalda-sync' ); ?></div>
-                                <p class="wns-settings-row-desc"><?php esc_html_e( 'Keep inventory levels synchronized across platforms.', 'woo-nalda-sync' ); ?></p>
-                            </div>
-                            <div class="wns-settings-row-control">
-                                <label class="wns-toggle">
-                                    <input type="checkbox" name="sync_inventory" value="yes" <?php checked( isset( $settings['sync_inventory'] ) ? $settings['sync_inventory'] : 'yes', 'yes' ); ?>>
-                                    <span class="wns-toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
 
-                        <div class="wns-settings-row">
-                            <div class="wns-settings-row-info">
-                                <div class="wns-settings-row-label"><?php esc_html_e( 'Auto Update Prices', 'woo-nalda-sync' ); ?></div>
-                                <p class="wns-settings-row-desc"><?php esc_html_e( 'Automatically update product prices during sync.', 'woo-nalda-sync' ); ?></p>
-                            </div>
-                            <div class="wns-settings-row-control">
-                                <label class="wns-toggle">
-                                    <input type="checkbox" name="auto_update_prices" value="yes" <?php checked( isset( $settings['auto_update_prices'] ) ? $settings['auto_update_prices'] : 'no', 'yes' ); ?>>
-                                    <span class="wns-toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

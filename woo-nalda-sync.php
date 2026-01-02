@@ -163,8 +163,6 @@ final class Woo_Nalda_Sync {
             'sync_interval'          => '15',
             'sync_products'          => 'yes',
             'sync_orders'            => 'yes',
-            'sync_inventory'         => 'yes',
-            'auto_update_prices'     => 'no',
             'log_enabled'            => 'yes',
             'notification_email'     => get_option( 'admin_email' ),
             'webhook_enabled'        => 'no',

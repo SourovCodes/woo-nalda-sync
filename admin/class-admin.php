@@ -182,8 +182,6 @@ class Woo_Nalda_Sync_Admin {
             'sync_interval'          => isset( $data['sync_interval'] ) ? absint( $data['sync_interval'] ) : 15,
             'sync_products'          => isset( $data['sync_products'] ) ? 'yes' : 'no',
             'sync_orders'            => isset( $data['sync_orders'] ) ? 'yes' : 'no',
-            'sync_inventory'         => isset( $data['sync_inventory'] ) ? 'yes' : 'no',
-            'auto_update_prices'     => isset( $data['auto_update_prices'] ) ? 'yes' : 'no',
             'log_enabled'            => isset( $data['log_enabled'] ) ? 'yes' : 'no',
             'notification_email'     => isset( $data['notification_email'] ) ? sanitize_email( $data['notification_email'] ) : '',
             'webhook_enabled'        => isset( $data['webhook_enabled'] ) ? 'yes' : 'no',
