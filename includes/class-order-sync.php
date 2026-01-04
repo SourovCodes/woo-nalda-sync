@@ -365,8 +365,8 @@ class Woo_Nalda_Sync_Order_Sync {
                 $order->set_currency( $order_items[0]['currency'] );
             }
 
-            // Calculate totals.
-            $order->calculate_totals();
+            // Calculate totals without recalculating taxes (prices are already VAT-included).
+            $order->calculate_totals( false );
 
             // Set Nalda metadata.
             $order->update_meta_data( '_nalda_order_id', $nalda_order['orderId'] );
@@ -418,15 +418,23 @@ class Woo_Nalda_Sync_Order_Sync {
             $item = new WC_Order_Item_Product();
             $item->set_product( $product );
             $item->set_quantity( $nalda_item['quantity'] );
+            // Prices from Nalda are already VAT-included, use as-is
             $item->set_subtotal( $nalda_item['price'] * $nalda_item['quantity'] );
             $item->set_total( $nalda_item['price'] * $nalda_item['quantity'] );
+            // Set taxes to 0 since price is already VAT-included
+            $item->set_subtotal_tax( 0 );
+            $item->set_total_tax( 0 );
         } else {
             // Create custom line item.
             $item = new WC_Order_Item_Product();
             $item->set_name( $nalda_item['title'] );
             $item->set_quantity( $nalda_item['quantity'] );
+            // Prices from Nalda are already VAT-included, use as-is
             $item->set_subtotal( $nalda_item['price'] * $nalda_item['quantity'] );
             $item->set_total( $nalda_item['price'] * $nalda_item['quantity'] );
+            // Set taxes to 0 since price is already VAT-included
+            $item->set_subtotal_tax( 0 );
+            $item->set_total_tax( 0 );
         }
 
         // Add Nalda item metadata.
@@ -498,6 +506,60 @@ class Woo_Nalda_Sync_Order_Sync {
     private function update_order( $order, $nalda_order ) {
         $updated = false;
 
+        // Fetch order items from Nalda to get latest delivery status.
+        $items_result = $this->fetch_order_items( $nalda_order['orderId'] );
+        
+        if ( $items_result['success'] && ! empty( $items_result['items'] ) ) {
+            // Update order item delivery statuses.
+            $order_items = $order->get_items();
+            
+            foreach ( $order_items as $order_item ) {
+                $gtin = $order_item->get_meta( '_nalda_gtin' );
+                
+                if ( $gtin ) {
+                    // Find matching Nalda item.
+                    foreach ( $items_result['items'] as $nalda_item ) {
+                        if ( $nalda_item['gtin'] === $gtin ) {
+                            // Update delivery status.
+                            $old_status = $order_item->get_meta( '_nalda_delivery_status' );
+                            $new_status = isset( $nalda_item['deliveryStatus'] ) ? $nalda_item['deliveryStatus'] : '';
+                            
+                            if ( $old_status !== $new_status ) {
+                                $order_item->update_meta_data( '_nalda_delivery_status', $new_status );
+                                $order_item->save();
+                                
+                                $order->add_order_note(
+                                    sprintf(
+                                        __( 'Item "%s" delivery status updated: %s → %s', 'woo-nalda-sync' ),
+                                        $order_item->get_name(),
+                                        $old_status ?: 'None',
+                                        $new_status
+                                    ),
+                                    false,
+                                    true
+                                );
+                                $updated = true;
+                            }
+                            
+                            // Update WooCommerce order status based on delivery status.
+                            if ( $new_status === 'DELIVERED' && $order->get_status() !== 'completed' ) {
+                                $order->update_status( 'completed', __( 'All items delivered (updated from Nalda)', 'woo-nalda-sync' ) );
+                                $updated = true;
+                            } elseif ( $new_status === 'CANCELLED' && ! in_array( $order->get_status(), array( 'cancelled', 'refunded' ) ) ) {
+                                $order->update_status( 'cancelled', __( 'Order cancelled in Nalda', 'woo-nalda-sync' ) );
+                                $updated = true;
+                            } elseif ( $new_status === 'RETURNED' && $order->get_status() !== 'refunded' ) {
+                                $order->update_status( 'refunded', __( 'Order returned (updated from Nalda)', 'woo-nalda-sync' ) );
+                                $updated = true;
+                            }
+                            
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         // Update payout status if changed.
         $current_payout_status = $order->get_meta( '_nalda_payout_status' );
         $new_payout_status     = isset( $nalda_order['payoutStatus'] ) ? $nalda_order['payoutStatus'] : '';
@@ -507,7 +569,7 @@ class Woo_Nalda_Sync_Order_Sync {
             $order->add_order_note(
                 sprintf(
                     __( 'Nalda payout status updated: %s → %s', 'woo-nalda-sync' ),
-                    $current_payout_status,
+                    $current_payout_status ?: 'None',
                     $new_payout_status
                 ),
                 false,

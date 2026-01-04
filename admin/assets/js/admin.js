@@ -414,8 +414,8 @@
                 type: 'POST',
                 data: {
                     action: 'woo_nalda_sync_run_order_sync',
-                    nonce: wooNaldaSync.nonce,
-                    range: 'today'
+                    nonce: wooNaldaSync.nonce
+                    // Range will be taken from plugin settings
                 },
                 success: function (response) {
                     if (response.success) {
