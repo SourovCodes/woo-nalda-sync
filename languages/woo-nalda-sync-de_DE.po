@@ -1,0 +1,773 @@
+# Copyright (C) 2026 WooCommerce Nalda Sync
+# This file is distributed under the GPL-2.0+.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Nalda Sync 1.0.0\n"
+"Report-Msgid-Bugs-To: https://jonakyds.com/\n"
+"POT-Creation-Date: 2026-01-05 12:00:00+00:00\n"
+"PO-Revision-Date: 2026-01-05 12:00:00+00:00\n"
+"Last-Translator: Jonakyds <support@jonakyds.com>\n"
+"Language-Team: German\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Manual\n"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "License"
+msgstr "Lizenz"
+
+msgid "Activating..."
+msgstr "Aktiviere..."
+
+msgid "Deactivating..."
+msgstr "Deaktiviere..."
+
+msgid "Validating..."
+msgstr "Überprüfe..."
+
+msgid "Saving..."
+msgstr "Speichere..."
+
+msgid "Settings saved!"
+msgstr "Einstellungen gespeichert!"
+
+msgid "An error occurred."
+msgstr "Ein Fehler ist aufgetreten."
+
+msgid "Are you sure you want to deactivate your license?"
+msgstr "Möchten Sie Ihre Lizenz wirklich deaktivieren?"
+
+msgid "Testing..."
+msgstr "Teste..."
+
+msgid "Test Connection"
+msgstr "Verbindung testen"
+
+msgid "Syncing..."
+msgstr "Synchronisiere..."
+
+msgid "Sync Products"
+msgstr "Produkte synchronisieren"
+
+msgid "Sync Orders"
+msgstr "Bestellungen synchronisieren"
+
+msgid "Connection successful!"
+msgstr "Verbindung erfolgreich!"
+
+msgid "Connection failed."
+msgstr "Verbindung fehlgeschlagen."
+
+msgid "Loading..."
+msgstr "Lade..."
+
+msgid "Security check failed."
+msgstr "Sicherheitsprüfung fehlgeschlagen."
+
+msgid "You do not have permission to do this."
+msgstr "Sie haben keine Berechtigung dazu."
+
+msgid "Settings saved successfully."
+msgstr "Einstellungen erfolgreich gespeichert."
+
+msgid "Please activate your license first."
+msgstr "Bitte aktivieren Sie zuerst Ihre Lizenz."
+
+msgid "Overview of your WooCommerce Nalda synchronization."
+msgstr "Übersicht Ihrer WooCommerce Nalda Synchronisierung."
+
+msgid "Licensed"
+msgstr "Lizenziert"
+
+msgid "Unlicensed"
+msgstr "Nicht lizenziert"
+
+msgid "License Required"
+msgstr "Lizenz erforderlich"
+
+msgid "Activate your license to enable product exports and order imports."
+msgstr "Aktivieren Sie Ihre Lizenz, um Produktexporte und Bestellungsimporte zu aktivieren."
+
+msgid "Activate Now"
+msgstr "Jetzt aktivieren"
+
+msgid "Complete Your Setup"
+msgstr "Vervollständigen Sie Ihr Setup"
+
+msgid "Configure your connections to start syncing data with Nalda Marketplace."
+msgstr "Konfigurieren Sie Ihre Verbindungen, um Daten mit Nalda Marketplace zu synchronisieren."
+
+msgid "Go to Settings"
+msgstr "Zu den Einstellungen"
+
+msgid "Active"
+msgstr "Aktiv"
+
+msgid "Inactive"
+msgstr "Inaktiv"
+
+msgid "Your license is active and valid."
+msgstr "Ihre Lizenz ist aktiv und gültig."
+
+msgid "License required to sync."
+msgstr "Lizenz für Synchronisierung erforderlich."
+
+msgid "Activate License"
+msgstr "Lizenz aktivieren"
+
+msgid "Configured"
+msgstr "Konfiguriert"
+
+msgid "Not Set"
+msgstr "Nicht festgelegt"
+
+msgid "SFTP Connection"
+msgstr "SFTP-Verbindung"
+
+msgid "Ready for product exports."
+msgstr "Bereit für Produktexporte."
+
+msgid "Required for product sync."
+msgstr "Erforderlich für Produktsynchronisierung."
+
+msgid "Configure SFTP"
+msgstr "SFTP konfigurieren"
+
+msgid "Connected"
+msgstr "Verbunden"
+
+msgid "Nalda API"
+msgstr "Nalda API"
+
+msgid "Ready for order imports."
+msgstr "Bereit für Bestellungsimporte."
+
+msgid "Required for order sync."
+msgstr "Erforderlich für Bestellungssynchronisierung."
+
+msgid "Add API Key"
+msgstr "API-Schlüssel hinzufügen"
+
+msgid "Product Export"
+msgstr "Produktexport"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "Manual"
+msgstr "Manuell"
+
+msgid "Products Exported"
+msgstr "Exportierte Produkte"
+
+msgid "Last Export"
+msgstr "Letzter Export"
+
+msgid "Next Export"
+msgstr "Nächster Export"
+
+msgid "Export Products Now"
+msgstr "Produkte jetzt exportieren"
+
+msgid "Activate your license to export products."
+msgstr "Aktivieren Sie Ihre Lizenz, um Produkte zu exportieren."
+
+msgid "Configure SFTP settings first."
+msgstr "Konfigurieren Sie zuerst die SFTP-Einstellungen."
+
+msgid "Order Import"
+msgstr "Bestellungsimport"
+
+msgid "Orders Imported"
+msgstr "Importierte Bestellungen"
+
+msgid "Last Import"
+msgstr "Letzter Import"
+
+msgid "Next Import"
+msgstr "Nächster Import"
+
+msgid "Import Orders Now"
+msgstr "Bestellungen jetzt importieren"
+
+msgid "Activate your license to import orders."
+msgstr "Aktivieren Sie Ihre Lizenz, um Bestellungen zu importieren."
+
+msgid "Add your Nalda API key first."
+msgstr "Fügen Sie zuerst Ihren Nalda API-Schlüssel hinzu."
+
+msgid "CSV Upload History"
+msgstr "CSV-Upload-Verlauf"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgid "Loading upload history..."
+msgstr "Lade Upload-Verlauf..."
+
+msgid "No CSV uploads yet."
+msgstr "Noch keine CSV-Uploads."
+
+msgid "Export products to see your upload history here."
+msgstr "Exportieren Sie Produkte, um Ihren Upload-Verlauf hier zu sehen."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Domain"
+msgstr "Domain"
+
+msgid "Created"
+msgstr "Erstellt"
+
+msgid "Processed"
+msgstr "Verarbeitet"
+
+msgid "Action"
+msgstr "Aktion"
+
+msgid "Previous"
+msgstr "Zurück"
+
+msgid "Next"
+msgstr "Weiter"
+
+msgid "Setup Checklist"
+msgstr "Setup-Checkliste"
+
+msgid "Enter your license key to unlock features."
+msgstr "Geben Sie Ihren Lizenzschlüssel ein, um Funktionen freizuschalten."
+
+msgid "Activate"
+msgstr "Aktivieren"
+
+msgid "Connect SFTP for product CSV uploads."
+msgstr "SFTP für Produkt-CSV-Uploads verbinden."
+
+msgid "Setup"
+msgstr "Einrichten"
+
+msgid "Connect Nalda API"
+msgstr "Nalda API verbinden"
+
+msgid "Add API key for order imports."
+msgstr "API-Schlüssel für Bestellungsimporte hinzufügen."
+
+msgid "Connect"
+msgstr "Verbinden"
+
+msgid "Enable Product Sync"
+msgstr "Produktsynchronisierung aktivieren"
+
+msgid "Auto-export products to Nalda."
+msgstr "Produkte automatisch zu Nalda exportieren."
+
+msgid "Enable Order Sync"
+msgstr "Bestellungssynchronisierung aktivieren"
+
+msgid "Auto-import orders from Nalda."
+msgstr "Bestellungen automatisch von Nalda importieren."
+
+msgid "Enable"
+msgstr "Aktivieren"
+
+msgid "Quick Links"
+msgstr "Schnellzugriff"
+
+msgid "Configure sync options"
+msgstr "Synchronisierungsoptionen konfigurieren"
+
+msgid "Manage your license"
+msgstr "Verwalten Sie Ihre Lizenz"
+
+msgid "WooCommerce Orders"
+msgstr "WooCommerce Bestellungen"
+
+msgid "View imported orders"
+msgstr "Importierte Bestellungen anzeigen"
+
+msgid "Products"
+msgstr "Produkte"
+
+msgid "Manage WooCommerce products"
+msgstr "WooCommerce-Produkte verwalten"
+
+msgid "Help & Resources"
+msgstr "Hilfe & Ressourcen"
+
+msgid "Documentation"
+msgstr "Dokumentation"
+
+msgid "Learn how to use the plugin"
+msgstr "Erfahren Sie, wie Sie das Plugin verwenden"
+
+msgid "Support"
+msgstr "Support"
+
+msgid "Get help from our team"
+msgstr "Holen Sie sich Hilfe von unserem Team"
+
+msgid "Changelog"
+msgstr "Änderungsprotokoll"
+
+msgid "See what's new"
+msgstr "Sehen Sie, was neu ist"
+
+msgid "My Account"
+msgstr "Mein Konto"
+
+msgid "Manage your purchases"
+msgstr "Verwalten Sie Ihre Käufe"
+
+msgid "Configure your WooCommerce Nalda Sync settings."
+msgstr "Konfigurieren Sie Ihre WooCommerce Nalda Sync Einstellungen."
+
+msgid "Please activate your license to enable all features and receive updates."
+msgstr "Bitte aktivieren Sie Ihre Lizenz, um alle Funktionen zu aktivieren und Updates zu erhalten."
+
+msgid "WooCommerce Settings"
+msgstr "WooCommerce Einstellungen"
+
+msgid "Country"
+msgstr "Land"
+
+msgid "Currency"
+msgstr "Währung"
+
+msgid "Tax Rate"
+msgstr "Steuersatz"
+
+msgid "These values are automatically imported from WooCommerce settings."
+msgstr "Diese Werte werden automatisch aus den WooCommerce-Einstellungen importiert."
+
+msgid "SFTP Connection Settings"
+msgstr "SFTP-Verbindungseinstellungen"
+
+msgid "Configure SFTP credentials for CSV file uploads."
+msgstr "SFTP-Zugangsdaten für CSV-Datei-Uploads konfigurieren."
+
+msgid "SFTP Host"
+msgstr "SFTP-Host"
+
+msgid "SFTP server hostname or IP address."
+msgstr "SFTP-Server-Hostname oder IP-Adresse."
+
+msgid "SFTP Port"
+msgstr "SFTP-Port"
+
+msgid "SFTP server port (default: 22)."
+msgstr "SFTP-Server-Port (Standard: 22)."
+
+msgid "SFTP Username"
+msgstr "SFTP-Benutzername"
+
+msgid "Username for SFTP authentication."
+msgstr "Benutzername für SFTP-Authentifizierung."
+
+msgid "SFTP Password"
+msgstr "SFTP-Passwort"
+
+msgid "Password for SFTP authentication."
+msgstr "Passwort für SFTP-Authentifizierung."
+
+msgid "Product Export Settings"
+msgstr "Produktexport-Einstellungen"
+
+msgid "Configure how products are exported to Nalda."
+msgstr "Konfigurieren Sie, wie Produkte zu Nalda exportiert werden."
+
+msgid "Enable automatic product export to Nalda via CSV."
+msgstr "Automatischen Produktexport zu Nalda via CSV aktivieren."
+
+msgid "Sync Schedule"
+msgstr "Synchronisierungsplan"
+
+msgid "How often to export products."
+msgstr "Wie oft Produkte exportiert werden sollen."
+
+msgid "Every 15 minutes"
+msgstr "Alle 15 Minuten"
+
+msgid "Every 30 minutes"
+msgstr "Alle 30 Minuten"
+
+msgid "Hourly"
+msgstr "Stündlich"
+
+msgid "Every 6 hours"
+msgstr "Alle 6 Stunden"
+
+msgid "Every 12 hours"
+msgstr "Alle 12 Stunden"
+
+msgid "Daily"
+msgstr "Täglich"
+
+msgid "Filename Pattern"
+msgstr "Dateinamensmuster"
+
+msgid "CSV filename pattern. Use {date} for current date."
+msgstr "CSV-Dateinamensmuster. Verwenden Sie {date} für das aktuelle Datum."
+
+msgid "Batch Size"
+msgstr "Stapelgröße"
+
+msgid "Number of products to process per batch."
+msgstr "Anzahl der Produkte pro Stapel."
+
+msgid "Default Delivery Time (days)"
+msgstr "Standard-Lieferzeit (Tage)"
+
+msgid "Default delivery time for products in days."
+msgstr "Standard-Lieferzeit für Produkte in Tagen."
+
+msgid "Return Period (days)"
+msgstr "Rückgabefrist (Tage)"
+
+msgid "Return period for products in days."
+msgstr "Rückgabefrist für Produkte in Tagen."
+
+msgid "Default Sync Behavior"
+msgstr "Standard-Synchronisierungsverhalten"
+
+msgid "Choose which products should sync by default."
+msgstr "Wählen Sie, welche Produkte standardmäßig synchronisiert werden sollen."
+
+msgid "Sync all products (opt-out)"
+msgstr "Alle Produkte synchronisieren (Opt-out)"
+
+msgid "Sync no products (opt-in)"
+msgstr "Keine Produkte synchronisieren (Opt-in)"
+
+msgid "Order Sync Settings"
+msgstr "Bestellungs-Synchronisierungseinstellungen"
+
+msgid "Configure how orders are imported from Nalda Marketplace to your WooCommerce store."
+msgstr "Konfigurieren Sie, wie Bestellungen vom Nalda Marketplace in Ihren WooCommerce-Shop importiert werden."
+
+msgid "Enable automatic order import from Nalda Marketplace."
+msgstr "Automatischen Bestellungsimport vom Nalda Marketplace aktivieren."
+
+msgid "Order Sync Schedule"
+msgstr "Bestellungs-Synchronisierungsplan"
+
+msgid "How often to check Nalda for new orders."
+msgstr "Wie oft nach neuen Bestellungen bei Nalda gesucht werden soll."
+
+msgid "Order Import Range"
+msgstr "Bestellungsimport-Zeitraum"
+
+msgid "Date range for importing orders from Nalda. Determines how far back to look for orders."
+msgstr "Datumsbereich für den Import von Bestellungen von Nalda. Bestimmt, wie weit zurück nach Bestellungen gesucht wird."
+
+msgid "Today"
+msgstr "Heute"
+
+msgid "Yesterday"
+msgstr "Gestern"
+
+msgid "Current Month"
+msgstr "Aktueller Monat"
+
+msgid "Last 3 Months"
+msgstr "Letzte 3 Monate"
+
+msgid "Last 6 Months"
+msgstr "Letzte 6 Monate"
+
+msgid "Reduce Stock on Import"
+msgstr "Bestand beim Import reduzieren"
+
+msgid "Automatically reduce WooCommerce stock quantities when orders are imported from Nalda."
+msgstr "WooCommerce-Bestandsmengen automatisch reduzieren, wenn Bestellungen von Nalda importiert werden."
+
+msgid "Create Customer Accounts"
+msgstr "Kundenkonten erstellen"
+
+msgid "Automatically create or link customer accounts for orders imported from Nalda."
+msgstr "Kundenkonten für von Nalda importierte Bestellungen automatisch erstellen oder verknüpfen."
+
+msgid "Nalda API Settings"
+msgstr "Nalda API-Einstellungen"
+
+msgid "Configure your Nalda Marketplace API settings. Get your API key from the Nalda Seller Portal (Orders → Settings)."
+msgstr "Konfigurieren Sie Ihre Nalda Marketplace API-Einstellungen. Holen Sie sich Ihren API-Schlüssel aus dem Nalda Verkäuferportal (Bestellungen → Einstellungen)."
+
+msgid "Nalda API Key"
+msgstr "Nalda API-Schlüssel"
+
+msgid "API key obtained from the Nalda Seller Portal (Orders → Settings)."
+msgstr "API-Schlüssel aus dem Nalda Verkäuferportal (Bestellungen → Einstellungen)."
+
+msgid "Enter API key"
+msgstr "API-Schlüssel eingeben"
+
+msgid "Nalda API URL"
+msgstr "Nalda API-URL"
+
+msgid "Leave default unless instructed otherwise."
+msgstr "Standard belassen, sofern nicht anders angegeben."
+
+msgid "Advanced Settings"
+msgstr "Erweiterte Einstellungen"
+
+msgid "Enable Logging"
+msgstr "Protokollierung aktivieren"
+
+msgid "Log sync activities for debugging purposes."
+msgstr "Synchronisierungsaktivitäten für Debugging-Zwecke protokollieren."
+
+msgid "Notification Email"
+msgstr "Benachrichtigungs-E-Mail"
+
+msgid "Email address for sync notifications and alerts."
+msgstr "E-Mail-Adresse für Synchronisierungsbenachrichtigungen und Warnungen."
+
+msgid "Enter email address"
+msgstr "E-Mail-Adresse eingeben"
+
+msgid "Save Settings"
+msgstr "Einstellungen speichern"
+
+msgid "Nalda Sync"
+msgstr "Nalda Sync"
+
+msgid "Nalda Marketplace Sync"
+msgstr "Nalda Marketplace Sync"
+
+msgid "Use default (Sync enabled)"
+msgstr "Standard verwenden (Sync aktiviert)"
+
+msgid "Use default (Sync disabled)"
+msgstr "Standard verwenden (Sync deaktiviert)"
+
+msgid "Enable sync for this product"
+msgstr "Sync für dieses Produkt aktivieren"
+
+msgid "Disable sync for this product"
+msgstr "Sync für dieses Produkt deaktivieren"
+
+msgid "Control whether this product is included in CSV exports to Nalda Marketplace."
+msgstr "Steuern Sie, ob dieses Produkt in CSV-Exporte zum Nalda Marketplace einbezogen wird."
+
+msgid "Nalda-Specific Fields"
+msgstr "Nalda-spezifische Felder"
+
+msgid "Delivery Time (days)"
+msgstr "Lieferzeit (Tage)"
+
+msgid "Override the default delivery time for this product."
+msgstr "Standard-Lieferzeit für dieses Produkt überschreiben."
+
+msgid "Product Condition"
+msgstr "Produktzustand"
+
+msgid "The condition of this product."
+msgstr "Der Zustand dieses Produkts."
+
+msgid "Default (New)"
+msgstr "Standard (Neu)"
+
+msgid "New"
+msgstr "Neu"
+
+msgid "Refurbished"
+msgstr "Generalüberholt"
+
+msgid "Used"
+msgstr "Gebraucht"
+
+msgid "Google Product Category"
+msgstr "Google Produktkategorie"
+
+msgid "Google product category ID or path for this product."
+msgstr "Google Produktkategorie-ID oder -Pfad für dieses Produkt."
+
+msgid "Book-Specific Fields"
+msgstr "Buch-spezifische Felder"
+
+msgid "Author"
+msgstr "Autor"
+
+msgid "Book author name."
+msgstr "Name des Buchautors."
+
+msgid "Publisher"
+msgstr "Verlag"
+
+msgid "Book publisher name."
+msgstr "Name des Buchverlags."
+
+msgid "Publication Year"
+msgstr "Erscheinungsjahr"
+
+msgid "Year of publication."
+msgstr "Jahr der Veröffentlichung."
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Book language (e.g., English, German)."
+msgstr "Buchsprache (z.B. Englisch, Deutsch)."
+
+msgid "Format"
+msgstr "Format"
+
+msgid "Book format."
+msgstr "Buchformat."
+
+msgid "Select format"
+msgstr "Format auswählen"
+
+msgid "Hardcover"
+msgstr "Gebundene Ausgabe"
+
+msgid "Paperback"
+msgstr "Taschenbuch"
+
+msgid "E-book"
+msgstr "E-Book"
+
+msgid "Audiobook"
+msgstr "Hörbuch"
+
+msgid "Nalda"
+msgstr "Nalda"
+
+msgid "SKU"
+msgstr "SKU"
+
+msgid "Sync"
+msgstr "Sync"
+
+msgid "Skip"
+msgstr "Überspringen"
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Click to toggle Nalda sync"
+msgstr "Klicken Sie, um die Nalda-Synchronisierung umzuschalten"
+
+msgid "Enable Nalda Sync"
+msgstr "Nalda Sync aktivieren"
+
+msgid "Disable Nalda Sync"
+msgstr "Nalda Sync deaktivieren"
+
+#, c-format
+msgid "Nalda sync enabled for %d product."
+msgid_plural "Nalda sync enabled for %d products."
+msgstr[0] "Nalda Sync für %d Produkt aktiviert."
+msgstr[1] "Nalda Sync für %d Produkte aktiviert."
+
+#, c-format
+msgid "Nalda sync disabled for %d product."
+msgid_plural "Nalda sync disabled for %d products."
+msgstr[0] "Nalda Sync für %d Produkt deaktiviert."
+msgstr[1] "Nalda Sync für %d Produkte deaktiviert."
+
+msgid "— No Change —"
+msgstr "— Keine Änderung —"
+
+msgid "Disable"
+msgstr "Deaktivieren"
+
+msgid "All Nalda Sync"
+msgstr "Alle Nalda Sync"
+
+msgid "Explicitly Enabled"
+msgstr "Explizit aktiviert"
+
+msgid "Explicitly Disabled"
+msgstr "Explizit deaktiviert"
+
+msgid "Using Default"
+msgstr "Standard verwenden"
+
+msgid "Permission denied."
+msgstr "Zugriff verweigert."
+
+msgid "Invalid product."
+msgstr "Ungültiges Produkt."
+
+msgid "Sync enabled."
+msgstr "Sync aktiviert."
+
+msgid "Sync disabled."
+msgstr "Sync deaktiviert."
+
+msgid "Using default setting."
+msgstr "Standardeinstellung wird verwendet."
+
+msgid "License is not valid."
+msgstr "Lizenz ist nicht gültig."
+
+msgid "Nalda API key is not configured."
+msgstr "Nalda API-Schlüssel ist nicht konfiguriert."
+
+msgid "No new orders found."
+msgstr "Keine neuen Bestellungen gefunden."
+
+#, c-format
+msgid "Sync completed in %s seconds. Created: %d, Updated: %d, Skipped: %d"
+msgstr "Synchronisierung in %s Sekunden abgeschlossen. Erstellt: %d, Aktualisiert: %d, Übersprungen: %d"
+
+#, c-format
+msgid "Failed to fetch orders: %s"
+msgstr "Fehler beim Abrufen der Bestellungen: %s"
+
+msgid "Unknown error occurred."
+msgstr "Unbekannter Fehler aufgetreten."
+
+#, c-format
+msgid "Imported from Nalda Marketplace (Order #%d)"
+msgstr "Importiert vom Nalda Marketplace (Bestellung #%d)"
+
+#, c-format
+msgid "Order imported from Nalda Marketplace. Nalda Order ID: %d"
+msgstr "Bestellung vom Nalda Marketplace importiert. Nalda Bestellungs-ID: %d"
+
+#, c-format
+msgid "Stock reduced for %s (-%d)"
+msgstr "Bestand reduziert für %s (-%d)"
+
+#, c-format
+msgid "Item \"%s\" delivery status updated: %s → %s"
+msgstr "Lieferstatus des Artikels \"%s\" aktualisiert: %s → %s"
+
+msgid "All items delivered (updated from Nalda)"
+msgstr "Alle Artikel geliefert (aktualisiert von Nalda)"
+
+msgid "Order cancelled in Nalda"
+msgstr "Bestellung in Nalda storniert"
+
+msgid "Order returned (updated from Nalda)"
+msgstr "Bestellung zurückgegeben (aktualisiert von Nalda)"
+
+#, c-format
+msgid "Nalda payout status updated: %s → %s"
+msgstr "Nalda Auszahlungsstatus aktualisiert: %s → %s"
+
+#, c-format
+msgid "Nalda refund amount updated: %s"
+msgstr "Nalda Rückerstattungsbetrag aktualisiert: %s"
+
+#, c-format
+msgid "Stock restored for %s (+%d) - Order %s"
+msgstr "Bestand wiederhergestellt für %s (+%d) - Bestellung %s"
+
+#, c-format
+msgid "Error: %s"
+msgstr "Fehler: %s"
