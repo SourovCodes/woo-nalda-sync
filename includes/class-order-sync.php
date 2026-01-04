@@ -323,8 +323,12 @@ class Woo_Nalda_Sync_Order_Sync {
      */
     private function create_order( $nalda_order, $order_items ) {
         try {
+            // Get or create customer.
+            $customer_id = $this->get_or_create_customer( $nalda_order );
+
             $order = wc_create_order( array(
                 'status'        => 'processing',
+                'customer_id'   => $customer_id,
                 'customer_note' => sprintf( __( 'Imported from Nalda Marketplace (Order #%d)', 'woo-nalda-sync' ), $nalda_order['orderId'] ),
             ) );
 
@@ -432,6 +436,32 @@ class Woo_Nalda_Sync_Order_Sync {
             // Set taxes to 0 since price is already VAT-included
             $item->set_subtotal_tax( 0 );
             $item->set_total_tax( 0 );
+
+            // Reduce stock if enabled.
+            $settings = woo_nalda_sync()->get_setting();
+            if ( isset( $settings['order_reduce_stock'] ) && 'yes' === $settings['order_reduce_stock'] ) {
+                if ( $product->managing_stock() ) {
+                    $new_stock = wc_update_product_stock( $product, $nalda_item['quantity'], 'decrease' );
+                    $this->log( sprintf(
+                        'Reduced stock for product #%d (%s) by %d. New stock: %s',
+                        $product->get_id(),
+                        $product->get_name(),
+                        $nalda_item['quantity'],
+                        $new_stock
+                    ) );
+                    
+                    // Add order note about stock reduction.
+                    $order->add_order_note(
+                        sprintf(
+                            __( 'Stock reduced for %s (-%d)', 'woo-nalda-sync' ),
+                            $product->get_name(),
+                            $nalda_item['quantity']
+                        ),
+                        false,
+                        false
+                    );
+                }
+            }
         } else {
             // Create custom line item.
             $item = new WC_Order_Item_Product();
@@ -449,6 +479,7 @@ class Woo_Nalda_Sync_Order_Sync {
         $item->add_meta_data( '_nalda_gtin', $nalda_item['gtin'], true );
         $item->add_meta_data( '_nalda_condition', isset( $nalda_item['condition'] ) ? $nalda_item['condition'] : '', true );
         $item->add_meta_data( '_nalda_delivery_status', isset( $nalda_item['deliveryStatus'] ) ? $nalda_item['deliveryStatus'] : '', true );
+        $item->add_meta_data( '_reduced_stock', $product ? 'yes' : 'no', true );
 
         if ( isset( $nalda_item['deliveryDatePlanned'] ) ) {
             $item->add_meta_data( '_nalda_delivery_date_planned', $nalda_item['deliveryDatePlanned'], true );
@@ -547,6 +578,9 @@ class Woo_Nalda_Sync_Order_Sync {
                                     true
                                 );
                                 $updated = true;
+                                
+                                // Restore stock if order is cancelled or returned.
+                                $this->maybe_restore_stock( $order, $order_item, $new_status, $old_status );
                             }
                             
                             // Update WooCommerce order status based on delivery status.
@@ -610,6 +644,136 @@ class Woo_Nalda_Sync_Order_Sync {
         }
 
         return $updated;
+    }
+
+    /**
+     * Restore stock when order is cancelled or returned.
+     *
+     * @param WC_Order          $order      Order object.
+     * @param WC_Order_Item     $order_item Order item.
+     * @param string            $new_status New delivery status.
+     * @param string            $old_status Old delivery status.
+     */
+    private function maybe_restore_stock( $order, $order_item, $new_status, $old_status ) {
+        // Only restore stock if it was previously reduced.
+        if ( 'yes' !== $order_item->get_meta( '_reduced_stock' ) ) {
+            return;
+        }
+
+        // Restore stock if order is cancelled or returned.
+        if ( ! in_array( $new_status, array( 'CANCELLED', 'RETURNED' ) ) ) {
+            return;
+        }
+
+        // Don't restore stock if already cancelled/returned.
+        if ( in_array( $old_status, array( 'CANCELLED', 'RETURNED' ) ) ) {
+            return;
+        }
+
+        $product = $order_item->get_product();
+        if ( ! $product || ! $product->managing_stock() ) {
+            return;
+        }
+
+        $quantity = $order_item->get_quantity();
+        $new_stock = wc_update_product_stock( $product, $quantity, 'increase' );
+        
+        $this->log( sprintf(
+            'Restored stock for product #%d (%s) by %d due to %s. New stock: %s',
+            $product->get_id(),
+            $product->get_name(),
+            $quantity,
+            $new_status,
+            $new_stock
+        ) );
+        
+        $order->add_order_note(
+            sprintf(
+                __( 'Stock restored for %s (+%d) - Order %s', 'woo-nalda-sync' ),
+                $product->get_name(),
+                $quantity,
+                strtolower( $new_status )
+            ),
+            false,
+            false
+        );
+        
+        // Mark stock as restored.
+        $order_item->update_meta_data( '_stock_restored', 'yes' );
+        $order_item->save();
+    }
+
+    /**
+     * Create or get customer for Nalda order.
+     *
+     * @param array $nalda_order Nalda order data.
+     * @return int Customer ID (0 for guest).
+     */
+    private function get_or_create_customer( $nalda_order ) {
+        $settings = woo_nalda_sync()->get_setting();
+        
+        // Check if customer creation is enabled.
+        if ( ! isset( $settings['order_create_customers'] ) || 'yes' !== $settings['order_create_customers'] ) {
+            return 0; // Guest checkout.
+        }
+
+        $email      = $nalda_order['email'];
+        $first_name = $nalda_order['firstName'];
+        $last_name  = $nalda_order['lastName'];
+
+        // Check if customer already exists.
+        $user = get_user_by( 'email', $email );
+
+        if ( $user ) {
+            $this->log( sprintf( 'Found existing customer #%d for email %s', $user->ID, $email ) );
+            return $user->ID;
+        }
+
+        // Create new customer.
+        $username = sanitize_user( $email, true );
+        
+        // Ensure username is unique.
+        $username_base = $username;
+        $counter = 1;
+        while ( username_exists( $username ) ) {
+            $username = $username_base . $counter;
+            $counter++;
+        }
+
+        $customer_id = wc_create_new_customer( $email, $username, wp_generate_password() );
+
+        if ( is_wp_error( $customer_id ) ) {
+            $this->log( sprintf( 'Failed to create customer for %s: %s', $email, $customer_id->get_error_message() ) );
+            return 0; // Guest checkout.
+        }
+
+        // Update customer data.
+        wp_update_user( array(
+            'ID'         => $customer_id,
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+        ) );
+
+        // Set billing address.
+        update_user_meta( $customer_id, 'billing_first_name', $first_name );
+        update_user_meta( $customer_id, 'billing_last_name', $last_name );
+        update_user_meta( $customer_id, 'billing_email', $email );
+        update_user_meta( $customer_id, 'billing_address_1', $nalda_order['street1'] );
+        update_user_meta( $customer_id, 'billing_city', $nalda_order['city'] );
+        update_user_meta( $customer_id, 'billing_postcode', $nalda_order['postalCode'] );
+        update_user_meta( $customer_id, 'billing_country', $nalda_order['country'] );
+
+        // Set shipping address (same as billing).
+        update_user_meta( $customer_id, 'shipping_first_name', $first_name );
+        update_user_meta( $customer_id, 'shipping_last_name', $last_name );
+        update_user_meta( $customer_id, 'shipping_address_1', $nalda_order['street1'] );
+        update_user_meta( $customer_id, 'shipping_city', $nalda_order['city'] );
+        update_user_meta( $customer_id, 'shipping_postcode', $nalda_order['postalCode'] );
+        update_user_meta( $customer_id, 'shipping_country', $nalda_order['country'] );
+
+        $this->log( sprintf( 'Created new customer #%d for email %s', $customer_id, $email ) );
+
+        return $customer_id;
     }
 
     /**

@@ -321,6 +321,32 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </select>
                         </div>
                     </div>
+
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Reduce Stock on Import', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Automatically reduce WooCommerce stock quantities when orders are imported from Nalda.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <label class="wns-toggle">
+                                <input type="checkbox" name="order_reduce_stock" value="yes" <?php checked( isset( $settings['order_reduce_stock'] ) ? $settings['order_reduce_stock'] : 'yes', 'yes' ); ?>>
+                                <span class="wns-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Create Customer Accounts', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Automatically create or link customer accounts for orders imported from Nalda.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <label class="wns-toggle">
+                                <input type="checkbox" name="order_create_customers" value="yes" <?php checked( isset( $settings['order_create_customers'] ) ? $settings['order_create_customers'] : 'yes', 'yes' ); ?>>
+                                <span class="wns-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
