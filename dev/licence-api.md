@@ -1,26 +1,122 @@
-# License Manager API Documentation
-
-**Version:** 1.0  
-**Base URL:** `https://licence-manager.jonakyds.com/api/v1`
+# License API v2 Documentation
 
 ## Overview
 
-The License Manager API provides endpoints for managing software license activation, validation, and status checking. All endpoints accept `POST` requests with JSON body and return JSON responses.
+The License API v2 provides endpoints for managing software license activations. It's designed for **server-to-server communication** — plugin/theme backends should call these endpoints, NOT browser clients.
 
-### Authentication
+**Base URL:** `https://license-manager-jonakyds.vercel.app/api/v2/licenses`
 
-No token-based authentication is required. The license key itself serves as the authentication mechanism.
+**Version:** 2.0
 
-### Rate Limiting
+## Important: Server-to-Server Only
 
-All endpoints are rate-limited to **60 requests per minute** per IP address.
+This API is intended to be called from your plugin or theme's backend server, not directly from browsers. The API:
+- Sets `X-API-Type: server-to-server` header
+- Does not support CORS for browser requests
+- Masks sensitive data (like customer emails) for privacy
+- Should be called from PHP, Node.js, or other server-side code
 
-### Headers
+## Authentication
 
-| Header | Value | Required |
-|--------|-------|----------|
-| `Content-Type` | `application/json` | Yes |
-| `Accept` | `application/json` | Recommended |
+Currently, these endpoints are public and rely on the secrecy of license keys. For production use, consider adding:
+- API key authentication
+- IP whitelisting
+
+## Rate Limiting
+
+Rate limiting is implemented using **Upstash Redis** (free tier: 10,000 commands/day).
+
+### Limits
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| `/activate` | 60 requests | per hour per IP |
+| `/validate` | 60 requests | per hour per IP |
+| `/deactivate` | 60 requests | per hour per IP |
+| `/status` | 60 requests | per hour per IP |
+| Failed attempts | 60 attempts | per hour per license key |
+
+### Rate Limit Response
+
+When rate limited, the API returns:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests. Please try again in 45 seconds."
+  }
+}
+```
+
+**HTTP Status:** `429 Too Many Requests`
+
+**Headers:**
+- `Retry-After`: Seconds until the limit resets
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining
+- `X-RateLimit-Reset`: Unix timestamp when the limit resets
+
+### Setup
+
+1. Create a free account at [upstash.com](https://upstash.com)
+2. Create a Redis database
+3. Add to your `.env`:
+   ```
+   UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+   UPSTASH_REDIS_REST_TOKEN=your-token
+   ```
+
+> **Note:** Rate limiting is automatically disabled if Upstash is not configured (useful for development).
+
+## Common Response Format
+
+All endpoints return responses in a consistent format:
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Optional success message"
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": {
+      "field_name": ["Error message 1", "Error message 2"]
+    }
+  }
+}
+```
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `VALIDATION_ERROR` | Invalid request parameters |
+| `LICENSE_NOT_FOUND` | License key doesn't exist |
+| `LICENSE_EXPIRED` | License has passed its expiration date |
+| `LICENSE_REVOKED` | License has been manually revoked |
+| `LICENSE_INACTIVE` | License is not active |
+| `PRODUCT_NOT_FOUND` | Product doesn't match the license |
+| `PRODUCT_INACTIVE` | Product has been deactivated |
+| `DOMAIN_MISMATCH` | License is activated on a different domain |
+| `DOMAIN_CHANGE_LIMIT_EXCEEDED` | No more domain changes allowed |
+| `ALREADY_ACTIVATED` | License is already activated |
+| `NOT_ACTIVATED` | License hasn't been activated yet |
+| `ACTIVATION_NOT_FOUND` | No activation record found |
+| `RATE_LIMIT_EXCEEDED` | Too many requests, try again later |
+| `INTERNAL_ERROR` | Unexpected server error |
 
 ---
 
@@ -28,426 +124,368 @@ All endpoints are rate-limited to **60 requests per minute** per IP address.
 
 ### 1. Activate License
 
-Activate a license key on a specific domain.
+Activates a license key on a specific domain.
 
-**Endpoint:** `POST /license/activate`
+**Endpoint:** `POST /api/v2/licenses/activate`
 
-#### Request Body
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `license_key` | string | Yes | The license key to activate (max 50 chars) |
-| `domain` | string | Yes | The domain to activate the license on (max 255 chars) |
-| `product_slug` | string | Yes | The product identifier/slug (max 100 chars) |
-
-#### Example Request
-
-```bash
-curl -X POST https://licence-manager.jonakyds.com/api/v1/license/activate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "license_key": "XXXX-XXXX-XXXX-XXXX",
-    "domain": "example.com",
-    "product_slug": "my-product"
-  }'
-```
-
-#### Success Response (200 OK)
+**Request Body:**
 
 ```json
 {
-  "message": "License activated successfully.",
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "product_slug": "my-awesome-plugin",
+  "domain": "example.com"
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
   "data": {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
-    "status": "active",
-    "activated_at": "2026-01-01T12:00:00+00:00",
-    "expires_at": "2027-01-01T12:00:00+00:00",
+    "domain": "example.com",
+    "activated_at": "2024-01-15T10:30:00.000Z",
+    "expires_at": "2025-01-15T10:30:00.000Z",
     "days_remaining": 365,
-    "domain": "example.com"
-  }
+    "is_new_activation": true,
+    "domain_changes_remaining": 3,
+    "product": {
+      "name": "My Awesome Plugin",
+      "slug": "my-awesome-plugin",
+      "type": "plugin"
+    },
+    "customer": {
+      "name": "John Doe",
+      "email": "j*******@e******.com"
+    }
+  },
+  "message": "License activated successfully"
 }
 ```
 
-#### Error Response (422 Unprocessable Entity)
+**Behavior:**
 
-```json
-{
-  "message": "License key not found."
-}
-```
-
-#### Possible Error Messages
-
-| Message | Description |
-|---------|-------------|
-| `License key not found.` | The provided license key does not exist |
-| `License is not valid for this product.` | The license belongs to a different product |
-| `License has been revoked.` | The license has been revoked by an administrator |
-| `License has expired.` | The license validity period has ended |
-| `Invalid domain format.` | The domain format is not valid |
-| `Maximum domain changes reached. Contact support.` | No more domain changes are allowed |
+- **First activation:** Records activation time and calculates expiration date
+- **Same domain:** Returns success without changes (idempotent)
+- **Different domain:** Performs domain change if within limit
 
 ---
 
 ### 2. Validate License
 
-Check if a license is valid and active on a specific domain.
+Checks if a license is valid and properly activated on the requesting domain.
 
-**Endpoint:** `POST /license/validate`
+**Endpoint:** `POST /api/v2/licenses/validate`
 
-#### Request Body
+**Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `license_key` | string | Yes | The license key to validate (max 50 chars) |
-| `domain` | string | Yes | The domain to check activation for (max 255 chars) |
-| `product_slug` | string | Yes | The product identifier/slug (max 100 chars) |
+```json
+{
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "product_slug": "my-awesome-plugin",
+  "domain": "example.com"
+}
+```
 
-#### Example Request
+**Success Response (200):**
 
-```bash
-curl -X POST https://licence-manager.jonakyds.com/api/v1/license/validate \
-  -H "Content-Type: application/json" \
-  -d '{
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
     "license_key": "XXXX-XXXX-XXXX-XXXX",
     "domain": "example.com",
-    "product_slug": "my-product"
-  }'
-```
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "License is valid.",
-  "expires_at": "2027-01-01T12:00:00+00:00",
-  "days_remaining": 365
+    "status": "active",
+    "activated_at": "2024-01-15T10:30:00.000Z",
+    "expires_at": "2025-01-15T10:30:00.000Z",
+    "days_remaining": 350,
+    "product": {
+      "name": "My Awesome Plugin",
+      "slug": "my-awesome-plugin",
+      "type": "plugin"
+    }
+  },
+  "message": "License is valid"
 }
 ```
 
-#### Error Response (422 Unprocessable Entity)
+**Usage Notes:**
 
-```json
-{
-  "message": "License is not active on this domain."
-}
-```
-
-#### Possible Error Messages
-
-| Message | Description |
-|---------|-------------|
-| `License key not found.` | The provided license key does not exist |
-| `License is not valid for this product.` | The license belongs to a different product |
-| `License has been revoked.` | The license has been revoked by an administrator |
-| `License has expired.` | The license validity period has ended |
-| `Invalid domain format.` | The domain format is not valid |
-| `License is not activated.` | The license has not been activated on any domain |
-| `License is not active on this domain.` | The license is active on a different domain |
+- Call this endpoint periodically (e.g., daily cron job or on admin page load)
+- If `valid` is `false`, check the `status` and `message` for the reason
+- Automatically marks expired licenses
 
 ---
 
 ### 3. Deactivate License
 
-Deactivate a license from a specific domain.
+Removes a license from its current domain.
 
-**Endpoint:** `POST /license/deactivate`
+**Endpoint:** `POST /api/v2/licenses/deactivate`
 
-#### Request Body
+**Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `license_key` | string | Yes | The license key to deactivate (max 50 chars) |
-| `domain` | string | Yes | The domain to deactivate from (max 255 chars) |
-| `product_slug` | string | Yes | The product identifier/slug (max 100 chars) |
-| `reason` | string | No | Optional reason for deactivation (max 255 chars) |
+```json
+{
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "product_slug": "my-awesome-plugin",
+  "domain": "example.com",
+  "reason": "Moving to new server"
+}
+```
 
-#### Example Request
+**Success Response (200):**
 
-```bash
-curl -X POST https://licence-manager.jonakyds.com/api/v1/license/deactivate \
-  -H "Content-Type: application/json" \
-  -d '{
+```json
+{
+  "success": true,
+  "data": {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
     "domain": "example.com",
-    "product_slug": "my-product",
-    "reason": "Migrating to new domain"
-  }'
-```
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "License deactivated successfully."
+    "deactivated_at": "2024-02-01T15:00:00.000Z",
+    "reason": "Moving to new server",
+    "domain_changes_remaining": 3
+  },
+  "message": "License deactivated successfully"
 }
 ```
 
-#### Error Response (422 Unprocessable Entity)
+**Important:**
 
-```json
-{
-  "message": "No active license found on this domain."
-}
-```
-
-#### Possible Error Messages
-
-| Message | Description |
-|---------|-------------|
-| `License key not found.` | The provided license key does not exist |
-| `License is not valid for this product.` | The license belongs to a different product |
-| `Invalid domain format.` | The domain format is not valid |
-| `No active license found on this domain.` | The license is not currently active on this domain |
+- Deactivation does NOT count against the domain change limit
+- Encourages proper deactivation before moving to a new domain
+- Records reason for audit purposes
 
 ---
 
 ### 4. License Status
 
-Get detailed status information about a license.
+Returns complete information about a license.
 
-**Endpoint:** `POST /license/status`
+**Endpoint:** `POST /api/v2/licenses/status`
 
-#### Request Body
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `license_key` | string | Yes | The license key to check (max 50 chars) |
-
-#### Example Request
-
-```bash
-curl -X POST https://licence-manager.jonakyds.com/api/v1/license/status \
-  -H "Content-Type: application/json" \
-  -d '{
-    "license_key": "XXXX-XXXX-XXXX-XXXX"
-  }'
-```
-
-#### Success Response (200 OK)
+**Request Body:**
 
 ```json
 {
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "product_slug": "my-awesome-plugin"
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
   "data": {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
     "status": "active",
+    "customer": {
+      "name": "John Doe",
+      "email": "j*******@e******.com"
+    },
     "product": {
-      "name": "My Product",
-      "slug": "my-product",
+      "name": "My Awesome Plugin",
+      "slug": "my-awesome-plugin",
       "type": "plugin"
     },
-    "customer_name": "John Doe",
     "activation": {
+      "is_activated": true,
       "domain": "example.com",
-      "activated_at": "2026-01-01T12:00:00+00:00"
+      "activated_at": "2024-01-15T10:30:00.000Z"
     },
-    "activated_at": "2026-01-01T12:00:00+00:00",
-    "expires_at": "2027-01-01T12:00:00+00:00",
-    "days_remaining": 365,
+    "validity": {
+      "validity_days": 365,
+      "expires_at": "2025-01-15T10:30:00.000Z",
+      "days_remaining": 350,
+      "is_expired": false
+    },
     "domain_changes": {
-      "used": 1,
-      "max": 3,
-      "remaining": 2
+      "max_allowed": 3,
+      "used": 0,
+      "remaining": 3
+    },
+    "timestamps": {
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-01-15T10:30:00.000Z"
     }
-  }
+  },
+  "message": "License status retrieved successfully"
 }
 ```
 
-#### Error Response (404 Not Found)
+**Usage Notes:**
 
-```json
-{
-  "message": "License key not found."
-}
-```
+- Does not require a domain parameter
+- Useful for "License Info" panels
+- Automatically updates expired status if needed
 
 ---
 
-## Data Types
+## Input Validation
 
-### License Status Values
+### License Key Format
 
-| Status | Description |
-|--------|-------------|
-| `active` | License is active and valid |
-| `expired` | License validity period has ended |
-| `revoked` | License has been manually revoked |
+- Format: `XXXX-XXXX-XXXX-XXXX`
+- Alphanumeric characters only (A-Z, 0-9)
+- Case-insensitive (automatically uppercased)
 
-### Domain Normalization
+### Product Slug Format
 
-The API automatically normalizes domain inputs:
+- Lowercase letters, numbers, and hyphens
+- Example: `my-awesome-plugin`
 
-- Removes `http://` and `https://` protocols
-- Removes `www.` prefix
-- Removes paths, ports, and trailing slashes
-- Converts to lowercase
+### Domain Format
 
-**Examples:**
-- `https://www.example.com/path` → `example.com`
-- `WWW.EXAMPLE.COM:8080` → `example.com`
-- `http://sub.example.com/` → `sub.example.com`
+- Accepts with or without protocol (automatically stripped)
+- Supports localhost, IP addresses, and ports
+- Examples: `example.com`, `localhost:3000`, `192.168.1.1:8080`
 
 ---
 
-## Validation Errors
-
-When request validation fails, the API returns a `422 Unprocessable Entity` response with details:
-
-```json
-{
-  "message": "License key is required.",
-  "errors": {
-    "license_key": [
-      "License key is required."
-    ]
-  }
-}
-```
-
----
-
-## Integration Example (PHP)
+## Example Integration (PHP)
 
 ```php
 <?php
-
-class LicenseClient
-{
-    private string $baseUrl;
-    private string $productSlug;
-
-    public function __construct(string $baseUrl, string $productSlug)
-    {
-        $this->baseUrl = rtrim($baseUrl, '/');
-        $this->productSlug = $productSlug;
-    }
-
-    public function activate(string $licenseKey, string $domain): array
-    {
-        return $this->request('/license/activate', [
-            'license_key' => $licenseKey,
-            'domain' => $domain,
-            'product_slug' => $this->productSlug,
+class LicenseManager {
+    private $api_url = 'https://license-manager-jonakyds.vercel.app/api/v2/licenses';
+    private $product_slug = 'my-awesome-plugin';
+    
+    public function activate($license_key) {
+        $domain = parse_url(home_url(), PHP_URL_HOST);
+        
+        $response = wp_remote_post($this->api_url . '/activate', [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => json_encode([
+                'license_key' => $license_key,
+                'product_slug' => $this->product_slug,
+                'domain' => $domain,
+            ]),
         ]);
+        
+        return json_decode(wp_remote_retrieve_body($response), true);
     }
-
-    public function validate(string $licenseKey, string $domain): array
-    {
-        return $this->request('/license/validate', [
-            'license_key' => $licenseKey,
-            'domain' => $domain,
-            'product_slug' => $this->productSlug,
+    
+    public function validate($license_key) {
+        $domain = parse_url(home_url(), PHP_URL_HOST);
+        
+        $response = wp_remote_post($this->api_url . '/validate', [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => json_encode([
+                'license_key' => $license_key,
+                'product_slug' => $this->product_slug,
+                'domain' => $domain,
+            ]),
         ]);
+        
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        
+        return $data['success'] && $data['data']['valid'];
     }
+}
+```
 
-    public function deactivate(string $licenseKey, string $domain, ?string $reason = null): array
-    {
-        return $this->request('/license/deactivate', [
-            'license_key' => $licenseKey,
-            'domain' => $domain,
-            'product_slug' => $this->productSlug,
-            'reason' => $reason,
-        ]);
-    }
+---
 
-    public function status(string $licenseKey): array
-    {
-        return $this->request('/license/status', [
-            'license_key' => $licenseKey,
-        ]);
-    }
+## Example Integration (JavaScript)
 
-    private function request(string $endpoint, array $data): array
-    {
-        $ch = curl_init($this->baseUrl . $endpoint);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-        ]);
+```javascript
+class LicenseClient {
+  constructor(apiUrl, productSlug) {
+    this.apiUrl = apiUrl;
+    this.productSlug = productSlug;
+  }
 
-        $response = curl_exec($ch);
-        curl_close($ch);
+  async activate(licenseKey, domain) {
+    const response = await fetch(`${this.apiUrl}/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: licenseKey,
+        product_slug: this.productSlug,
+        domain: domain,
+      }),
+    });
+    return response.json();
+  }
 
-        return json_decode($response, true);
-    }
+  async validate(licenseKey, domain) {
+    const response = await fetch(`${this.apiUrl}/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: licenseKey,
+        product_slug: this.productSlug,
+        domain: domain,
+      }),
+    });
+    const data = await response.json();
+    return data.success && data.data.valid;
+  }
+
+  async deactivate(licenseKey, domain, reason) {
+    const response = await fetch(`${this.apiUrl}/deactivate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: licenseKey,
+        product_slug: this.productSlug,
+        domain: domain,
+        reason: reason,
+      }),
+    });
+    return response.json();
+  }
+
+  async status(licenseKey) {
+    const response = await fetch(`${this.apiUrl}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: licenseKey,
+        product_slug: this.productSlug,
+      }),
+    });
+    return response.json();
+  }
 }
 
 // Usage
-$client = new LicenseClient('https://licence-manager.jonakyds.com/api/v1', 'my-product');
-
-// Activate license
-$result = $client->activate('XXXX-XXXX-XXXX-XXXX', 'example.com');
-if (isset($result['data'])) {
-    echo "License activated! Expires: " . $result['data']['expires_at'];
-}
-
-// Validate license
-$result = $client->validate('XXXX-XXXX-XXXX-XXXX', 'example.com');
-if (isset($result['expires_at'])) {
-    echo "License valid! Days remaining: " . $result['days_remaining'];
-}
+const client = new LicenseClient(
+  'https://license-manager-jonakyds.vercel.app/api/v2/licenses',
+  'my-awesome-plugin'
+);
 ```
 
 ---
 
-## WordPress Integration Example
+## Security Considerations
 
-```php
-<?php
-/**
- * Plugin Name: My Licensed Plugin
- */
+1. **Server-to-Server Only:** This API is designed for backend-to-backend communication, not browser clients
+2. **HTTPS Only:** Always use HTTPS in production
+3. **Email Masking:** Customer emails are automatically masked (e.g., `j*******@e******.com`) for privacy
+4. **Rate Limiting:** Implemented via Upstash Redis with per-IP and per-license-key limits
+5. **Brute Force Protection:** Failed validation attempts are tracked and blocked after 5 failures
+6. **IP Logging:** API logs IP addresses for audit purposes
+7. **License Key Secrecy:** Treat license keys like passwords
+8. **No Browser Caching:** Responses include `Cache-Control: no-store` headers
 
-class MyPluginLicense
-{
-    private const API_URL = 'https://licence-manager.jonakyds.com/api/v1';
-    private const PRODUCT_SLUG = 'my-plugin';
+---
 
-    public function validate(): bool
-    {
-        $licenseKey = get_option('my_plugin_license_key');
-        if (empty($licenseKey)) {
-            return false;
-        }
+## Changelog
 
-        $response = wp_remote_post(self::API_URL . '/license/validate', [
-            'headers' => ['Content-Type' => 'application/json'],
-            'body' => json_encode([
-                'license_key' => $licenseKey,
-                'domain' => parse_url(home_url(), PHP_URL_HOST),
-                'product_slug' => self::PRODUCT_SLUG,
-            ]),
-        ]);
-
-        if (is_wp_error($response)) {
-            return false;
-        }
-
-        $status = wp_remote_retrieve_response_code($response);
-        return $status === 200;
-    }
-
-    public function activate(string $licenseKey): array
-    {
-        $response = wp_remote_post(self::API_URL . '/license/activate', [
-            'headers' => ['Content-Type' => 'application/json'],
-            'body' => json_encode([
-                'license_key' => $licenseKey,
-                'domain' => parse_url(home_url(), PHP_URL_HOST),
-                'product_slug' => self::PRODUCT_SLUG,
-            ]),
-        ]);
-
-        if (is_wp_error($response)) {
-            return ['message' => $response->get_error_message()];
-        }
-
-        return json_decode(wp_remote_retrieve_body($response), true);
-    }
-}
-```
+### v2.0 (Current)
+- Initial versioned release
+- Server-to-server architecture (not for browser use)
+- Customer email masking for privacy
+- **Rate limiting via Upstash Redis**
+- **Brute force protection for failed attempts**
+- Consistent JSON response format
+- Comprehensive validation with Zod schemas
+- Auto-expiration handling
+- Domain change tracking
+- Audit logging for deactivations
