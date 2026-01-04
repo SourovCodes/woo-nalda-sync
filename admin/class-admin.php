@@ -355,14 +355,22 @@ class Woo_Nalda_Sync_Admin {
             wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
         }
 
-        $range = isset( $_POST['range'] ) ? sanitize_text_field( wp_unslash( $_POST['range'] ) ) : 'today';
-        
-        $result = $this->order_sync->run_sync( $range );
+        try {
+            // Get range from settings if not provided.
+            $settings = woo_nalda_sync()->get_setting();
+            $range    = isset( $_POST['range'] ) ? sanitize_text_field( wp_unslash( $_POST['range'] ) ) : ( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today' );
+            
+            $result = $this->order_sync->run_sync( $range );
 
-        if ( $result['success'] ) {
-            wp_send_json_success( $result );
-        } else {
-            wp_send_json_error( $result );
+            if ( $result['success'] ) {
+                wp_send_json_success( $result );
+            } else {
+                wp_send_json_error( $result );
+            }
+        } catch ( Exception $e ) {
+            wp_send_json_error( array( 
+                'message' => sprintf( __( 'Error: %s', 'woo-nalda-sync' ), $e->getMessage() ),
+            ) );
         }
     }
 

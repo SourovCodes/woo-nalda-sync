@@ -81,10 +81,11 @@ class Woo_Nalda_Sync_Order_Sync {
      */
     public function run_sync( $range = 'today' ) {
         $start_time = microtime( true );
-        $this->log( 'Starting order sync...' );
+        $this->log( sprintf( 'Starting order sync with range: %s', $range ) );
 
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
+            $this->log( 'License validation failed.' );
             return array(
                 'success' => false,
                 'message' => __( 'License is not valid.', 'woo-nalda-sync' ),
@@ -102,10 +103,13 @@ class Woo_Nalda_Sync_Order_Sync {
             );
         }
 
+        $this->log( sprintf( 'Fetching orders from Nalda API with range: %s', $range ) );
+
         // Get orders from Nalda API.
         $orders_result = $this->fetch_orders( $range );
 
         if ( ! $orders_result['success'] ) {
+            $this->log( sprintf( 'Failed to fetch orders: %s', $orders_result['message'] ) );
             return $orders_result;
         }
 
@@ -228,6 +232,9 @@ class Woo_Nalda_Sync_Order_Sync {
         $status_code = wp_remote_retrieve_response_code( $response );
         $body        = json_decode( wp_remote_retrieve_body( $response ), true );
 
+        // Log the API response for debugging.
+        $this->log( sprintf( 'Nalda API response - Status: %d, Body: %s', $status_code, wp_json_encode( $body ) ) );
+
         if ( $status_code !== 200 || ! isset( $body['success'] ) || ! $body['success'] ) {
             $error_message = isset( $body['message'] ) ? $body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' );
             $this->log( 'Failed to fetch orders: ' . $error_message );
@@ -236,6 +243,9 @@ class Woo_Nalda_Sync_Order_Sync {
                 'message' => $error_message,
             );
         }
+
+        $orders_count = isset( $body['result'] ) ? count( $body['result'] ) : 0;
+        $this->log( sprintf( 'Successfully fetched %d orders from Nalda API', $orders_count ) );
 
         return array(
             'success' => true,
