@@ -398,7 +398,7 @@ class Woo_Nalda_Sync_Product_Sync {
 
         // Check if product should be deleted (not in stock or not published).
         $delete_product = '';
-        if ( $product->get_status() === 'trash' || ( $stock !== null && $stock <= 0 && ! $product->get_backorders_allowed() ) ) {
+        if ( $product->get_status() === 'trash' || ( $stock !== null && $stock <= 0 && ! $product->backorders_allowed() ) ) {
             $delete_product = 'yes';
         }
 
