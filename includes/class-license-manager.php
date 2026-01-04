@@ -194,9 +194,18 @@ class Woo_Nalda_Sync_License_Manager {
             // Store license key.
             update_option( self::LICENSE_KEY_OPTION, sanitize_text_field( $license_key ) );
 
-            // Store license data.
-            $license_data = isset( $response['data'] ) ? $response['data'] : array();
-            $license_data['status'] = 'active';
+            // Store license data from v2 API response.
+            $response_data = isset( $response['data'] ) ? $response['data'] : array();
+            $license_data = array(
+                'status'                   => 'active',
+                'domain'                   => isset( $response_data['domain'] ) ? $response_data['domain'] : $this->get_domain(),
+                'activated_at'             => isset( $response_data['activated_at'] ) ? $response_data['activated_at'] : null,
+                'expires_at'               => isset( $response_data['expires_at'] ) ? $response_data['expires_at'] : null,
+                'days_remaining'           => isset( $response_data['days_remaining'] ) ? $response_data['days_remaining'] : null,
+                'domain_changes_remaining' => isset( $response_data['domain_changes_remaining'] ) ? $response_data['domain_changes_remaining'] : null,
+                'product'                  => isset( $response_data['product'] ) ? $response_data['product'] : null,
+            );
+
             update_option( self::LICENSE_DATA_OPTION, $license_data );
             update_option( self::LAST_VALIDATION_OPTION, time() );
 
@@ -349,10 +358,31 @@ class Woo_Nalda_Sync_License_Manager {
             'product_slug' => $this->product_slug,
         ) );
 
-        if ( isset( $response['data'] ) ) {
+        if ( $this->is_success_response( $response ) && isset( $response['data'] ) ) {
+            // Update local license data with API response.
+            $response_data = $response['data'];
+            $license_data  = $this->get_license_data();
+
+            // Update status from API.
+            $license_data['status'] = isset( $response_data['status'] ) ? $response_data['status'] : $license_data['status'];
+
+            // Update validity info.
+            if ( isset( $response_data['validity'] ) ) {
+                $license_data['expires_at']     = isset( $response_data['validity']['expires_at'] ) ? $response_data['validity']['expires_at'] : null;
+                $license_data['days_remaining'] = isset( $response_data['validity']['days_remaining'] ) ? $response_data['validity']['days_remaining'] : null;
+            }
+
+            // Update domain changes info.
+            if ( isset( $response_data['domain_changes'] ) ) {
+                $license_data['domain_changes_remaining'] = isset( $response_data['domain_changes']['remaining'] ) ? $response_data['domain_changes']['remaining'] : null;
+            }
+
+            update_option( self::LICENSE_DATA_OPTION, $license_data );
+            $this->license_data = $license_data;
+
             return array(
                 'success' => true,
-                'data'    => $response['data'],
+                'data'    => $response_data,
             );
         }
 
@@ -415,8 +445,8 @@ class Woo_Nalda_Sync_License_Manager {
      * @return bool
      */
     private function is_success_response( $response ) {
-        // Check for network/connection errors.
-        if ( isset( $response['error'] ) && $response['error'] ) {
+        // Check for network/connection errors (our internal error flag is boolean true).
+        if ( isset( $response['error'] ) && $response['error'] === true ) {
             return false;
         }
 
@@ -436,9 +466,16 @@ class Woo_Nalda_Sync_License_Manager {
      * @return bool
      */
     private function is_temporary_error( $response ) {
-        // Network errors or invalid responses.
-        if ( isset( $response['error'] ) && $response['error'] ) {
+        // Network errors or invalid responses (our internal error flag is boolean true).
+        if ( isset( $response['error'] ) && $response['error'] === true ) {
             return true;
+        }
+
+        // Check for v2 API rate limit error code.
+        if ( isset( $response['error'] ) && is_array( $response['error'] ) && isset( $response['error']['code'] ) ) {
+            if ( $response['error']['code'] === 'RATE_LIMIT_EXCEEDED' ) {
+                return true;
+            }
         }
 
         // Check for temporary HTTP status codes.
