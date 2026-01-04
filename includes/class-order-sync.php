@@ -374,6 +374,8 @@ class Woo_Nalda_Sync_Order_Sync {
             $order->update_meta_data( '_nalda_fee', isset( $nalda_order['fee'] ) ? $nalda_order['fee'] : 0 );
             $order->update_meta_data( '_nalda_commission', isset( $nalda_order['commission'] ) ? $nalda_order['commission'] : 0 );
             $order->update_meta_data( '_nalda_imported_at', current_time( 'mysql' ) );
+            $order->update_meta_data( '_order_source', 'nalda.com' );
+            $order->update_meta_data( '_created_via', 'nalda' );
 
             // Add collection info if available.
             if ( ! empty( $nalda_order['collectionId'] ) ) {
