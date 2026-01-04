@@ -121,23 +121,29 @@ class Woo_Nalda_Sync_License_Manager {
     public function is_valid() {
         $license_data = $this->get_license_data();
 
-        if ( empty( $license_data ) || ! isset( $license_data['status'] ) ) {
+        if ( empty( $license_data ) ) {
             return false;
         }
 
-        if ( $license_data['status'] !== 'active' ) {
+        // Check stored valid flag (set by validate_license).
+        if ( isset( $license_data['valid'] ) && $license_data['valid'] === false ) {
+            return false;
+        }
+
+        // Check status.
+        if ( ! isset( $license_data['status'] ) || ! in_array( $license_data['status'], array( 'active' ), true ) ) {
             return false;
         }
 
         // Check expiration.
-        if ( isset( $license_data['expires_at'] ) ) {
+        if ( isset( $license_data['expires_at'] ) && ! empty( $license_data['expires_at'] ) ) {
             $expires_at = strtotime( $license_data['expires_at'] );
             if ( $expires_at && $expires_at < time() ) {
                 return false;
             }
         }
 
-        // Check if validation is needed.
+        // Check if validation is needed (older than 24 hours).
         $last_validation = get_option( self::LAST_VALIDATION_OPTION, 0 );
         if ( ( time() - $last_validation ) > self::VALIDATION_INTERVAL ) {
             // Trigger background validation.
@@ -197,6 +203,7 @@ class Woo_Nalda_Sync_License_Manager {
             // Store license data from v2 API response.
             $response_data = isset( $response['data'] ) ? $response['data'] : array();
             $license_data = array(
+                'valid'                    => true,
                 'status'                   => 'active',
                 'domain'                   => isset( $response_data['domain'] ) ? $response_data['domain'] : $this->get_domain(),
                 'activated_at'             => isset( $response_data['activated_at'] ) ? $response_data['activated_at'] : null,
@@ -246,30 +253,11 @@ class Woo_Nalda_Sync_License_Manager {
             'domain'       => $this->get_domain(),
         ) );
 
-        if ( $this->is_success_response( $response ) ) {
-            // Update license data from v2 API response.
-            $license_data = $this->get_license_data();
-            $response_data = isset( $response['data'] ) ? $response['data'] : array();
+        // Update validation timestamp regardless of result.
+        update_option( self::LAST_VALIDATION_OPTION, time() );
 
-            $license_data['status']         = 'active';
-            $license_data['expires_at']     = isset( $response_data['expires_at'] ) ? $response_data['expires_at'] : ( isset( $license_data['expires_at'] ) ? $license_data['expires_at'] : null );
-            $license_data['days_remaining'] = isset( $response_data['days_remaining'] ) ? $response_data['days_remaining'] : ( isset( $license_data['days_remaining'] ) ? $license_data['days_remaining'] : null );
-
-            update_option( self::LICENSE_DATA_OPTION, $license_data );
-            update_option( self::LAST_VALIDATION_OPTION, time() );
-
-            // Clear cache.
-            $this->license_data = $license_data;
-
-            return array(
-                'success' => true,
-                'message' => isset( $response['message'] ) ? $response['message'] : __( 'License is valid.', 'woo-nalda-sync' ),
-                'data'    => $license_data,
-            );
-        }
-
-        // Check if this is a temporary error (rate limit, network, server error).
-        // In these cases, don't change the license status.
+        // Check for temporary errors first (network, rate limit, server errors).
+        // In these cases, don't change the license status - use cached value.
         if ( $this->is_temporary_error( $response ) ) {
             return array(
                 'success'        => false,
@@ -278,16 +266,51 @@ class Woo_Nalda_Sync_License_Manager {
             );
         }
 
-        // License is invalid - update status only for actual validation failures.
+        // Check API response success.
+        if ( ! $this->is_success_response( $response ) ) {
+            // API error (license not found, product mismatch, etc.).
+            $license_data = $this->get_license_data();
+            $license_data['status'] = 'invalid';
+            $license_data['valid']  = false;
+            update_option( self::LICENSE_DATA_OPTION, $license_data );
+            $this->license_data = $license_data;
+
+            return array(
+                'success'        => false,
+                'message'        => isset( $response['message'] ) ? $response['message'] : __( 'License validation failed.', 'woo-nalda-sync' ),
+                'status_changed' => true,
+            );
+        }
+
+        // API returned success - now check data.valid field.
+        // IMPORTANT: Expired/revoked licenses return success:true but valid:false.
+        $response_data = isset( $response['data'] ) ? $response['data'] : array();
+        $is_valid      = isset( $response_data['valid'] ) && $response_data['valid'] === true;
+
+        // Update license data.
         $license_data = $this->get_license_data();
-        $license_data['status'] = 'invalid';
+        $license_data['valid']          = $is_valid;
+        $license_data['status']         = isset( $response_data['status'] ) ? $response_data['status'] : ( $is_valid ? 'active' : 'invalid' );
+        $license_data['expires_at']     = isset( $response_data['expires_at'] ) ? $response_data['expires_at'] : ( isset( $license_data['expires_at'] ) ? $license_data['expires_at'] : null );
+        $license_data['days_remaining'] = isset( $response_data['days_remaining'] ) ? $response_data['days_remaining'] : ( isset( $license_data['days_remaining'] ) ? $license_data['days_remaining'] : null );
+
         update_option( self::LICENSE_DATA_OPTION, $license_data );
         $this->license_data = $license_data;
 
+        if ( $is_valid ) {
+            return array(
+                'success' => true,
+                'message' => isset( $response['message'] ) ? $response['message'] : __( 'License is valid.', 'woo-nalda-sync' ),
+                'data'    => $license_data,
+            );
+        }
+
+        // License is not valid (expired, revoked, domain mismatch, etc.).
         return array(
             'success'        => false,
-            'message'        => isset( $response['message'] ) ? $response['message'] : __( 'License validation failed.', 'woo-nalda-sync' ),
+            'message'        => isset( $response['message'] ) ? $response['message'] : __( 'License is not valid.', 'woo-nalda-sync' ),
             'status_changed' => true,
+            'data'           => $license_data,
         );
     }
 
