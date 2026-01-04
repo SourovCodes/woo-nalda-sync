@@ -378,8 +378,9 @@ class Woo_Nalda_Sync_Admin {
 
         $per_page = isset( $_POST['per_page'] ) ? absint( $_POST['per_page'] ) : 10;
         $page     = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
+        $status   = isset( $_POST['status'] ) ? sanitize_text_field( wp_unslash( $_POST['status'] ) ) : '';
 
-        $result = $this->product_sync->get_upload_history( $per_page, $page );
+        $result = $this->product_sync->get_upload_history( $per_page, $page, $status );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );

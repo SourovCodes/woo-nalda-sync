@@ -518,14 +518,15 @@
 
                     if (response.success) {
                         const uploads = response.data.data || [];
-                        const meta = response.data.meta || {};
+                        // Support both old 'meta' format and new 'pagination' format from API v2.
+                        const pagination = response.data.pagination || response.data.meta || {};
 
                         if (uploads.length === 0) {
                             $empty.show();
-                            self.updatePagination(meta);
+                            self.updatePagination(pagination);
                         } else {
                             self.renderTable(uploads);
-                            self.updatePagination(meta);
+                            self.updatePagination(pagination);
                             $table.show();
                         }
                         self.currentPage = page;
@@ -553,31 +554,31 @@
                 const createdAt = self.formatDate(upload.created_at);
                 const processedAt = upload.processed_at ? self.formatDate(upload.processed_at) : '—';
 
-                // Build error/action cell content
+                // Build error/action cell content.
+                // Note: New API v2 uses 'csv_file_key' instead of 'csv_url'.
                 let actionCell = '';
                 if (upload.error_message) {
                     actionCell = self.renderErrorMessage(upload.error_message);
-                } else if (upload.csv_url && upload.status === 'processed') {
-                    actionCell = '<a href="' + self.escapeHtml(upload.csv_url) + '" class="wns-btn wns-btn-sm wns-btn-secondary wns-download-btn" target="_blank" download>' +
-                        '<span class="dashicons dashicons-download"></span>' +
-                        '<span class="wns-btn-text">' + (wooNaldaSync.strings.download || 'Download') + '</span>' +
-                        '</a>';
-                } else if (upload.csv_url) {
-                    actionCell = '<a href="' + self.escapeHtml(upload.csv_url) + '" class="wns-btn wns-btn-sm wns-btn-outline wns-download-btn" target="_blank">' +
-                        '<span class="dashicons dashicons-visibility"></span>' +
-                        '<span class="wns-btn-text">' + (wooNaldaSync.strings.view || 'View') + '</span>' +
-                        '</a>';
+                } else if (upload.csv_file_key && upload.status === 'processed') {
+                    // Show file key for processed uploads.
+                    actionCell = '<span class="wns-text-muted" title="' + self.escapeHtml(upload.csv_file_key) + '">' +
+                        '<span class="dashicons dashicons-yes-alt wns-text-success"></span> Uploaded' +
+                        '</span>';
+                } else if (upload.csv_file_key) {
+                    actionCell = '<span class="wns-text-muted">' +
+                        '<span class="dashicons dashicons-clock"></span> Queued' +
+                        '</span>';
                 } else {
                     actionCell = '—';
                 }
 
                 const $row = $('<tr>' +
-                    '<td data-label="ID">' + upload.id + '</td>' +
+                    '<td data-label="ID">' + self.escapeHtml(upload.id) + '</td>' +
                     '<td data-label="Status"><span class="wns-badge wns-badge-sm ' + statusClass + '">' + statusLabel + '</span></td>' +
                     '<td data-label="Domain" class="wns-hide-mobile">' + self.escapeHtml(upload.domain) + '</td>' +
                     '<td data-label="Created">' + createdAt + '</td>' +
                     '<td data-label="Processed" class="wns-hide-mobile">' + processedAt + '</td>' +
-                    '<td data-label="Error / CSV" class="wns-action-cell">' + actionCell + '</td>' +
+                    '<td data-label="Status" class="wns-action-cell">' + actionCell + '</td>' +
                     '</tr>');
 
                 $tbody.append($row);
@@ -621,16 +622,19 @@
                 '</div>';
         },
 
-        updatePagination: function (meta) {
+        updatePagination: function (pagination) {
             const $pagination = $('.wns-upload-history-pagination');
 
-            if (!meta || !meta.total || meta.total <= this.perPage) {
+            // Support both old API format (total, current_page, last_page) 
+            // and new v2 format (total, page, total_pages).
+            const total = pagination.total || 0;
+            const currentPage = pagination.page || pagination.current_page || 1;
+            const lastPage = pagination.total_pages || pagination.last_page || 1;
+
+            if (!total || total <= this.perPage) {
                 $pagination.hide();
                 return;
             }
-
-            const currentPage = meta.current_page || 1;
-            const lastPage = meta.last_page || 1;
 
             $pagination.find('.wns-pagination-info').text(
                 wooNaldaSync.strings.pageInfo

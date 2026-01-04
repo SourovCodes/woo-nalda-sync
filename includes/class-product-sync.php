@@ -750,77 +750,167 @@ class Woo_Nalda_Sync_Product_Sync {
     /**
      * Upload CSV via Nalda API.
      *
+     * The new API uses UploadThing for file storage:
+     * 1. Request presigned URL from UploadThing endpoint
+     * 2. Upload file directly to UploadThing storage
+     * 3. Create CSV upload request with the file key
+     *
      * @param string $file_path Path to CSV file.
      * @return array Result with success status and message.
      */
     private function upload_csv( $file_path ) {
         $settings    = woo_nalda_sync()->get_setting();
         $license_key = $this->license_manager->get_license_key();
+        $domain      = $this->license_manager->get_domain();
 
-        $api_url = WOO_NALDA_SYNC_LICENSE_API_URL . '/nalda/csv-upload';
+        // Step 1: Request presigned URL from UploadThing.
+        $file_content = file_get_contents( $file_path );
+        $filename     = basename( $file_path );
+        $file_size    = filesize( $file_path );
 
-        // Prepare form data.
+        $presign_response = wp_remote_post( 'https://license-manager-jonakyds.vercel.app/api/uploadthing', array(
+            'timeout' => 60,
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ),
+            'body'    => wp_json_encode( array(
+                'files' => array(
+                    array(
+                        'name' => $filename,
+                        'size' => $file_size,
+                        'type' => 'text/csv',
+                    ),
+                ),
+                'input' => array(
+                    'license_key' => $license_key,
+                    'domain'      => $domain,
+                ),
+                'routeConfig' => array(
+                    'text/csv' => array(
+                        'maxFileSize' => '16MB',
+                        'maxFileCount' => 1,
+                    ),
+                ),
+            ) ),
+        ) );
+
+        if ( is_wp_error( $presign_response ) ) {
+            $this->log( 'Failed to get presigned URL: ' . $presign_response->get_error_message() );
+            return array(
+                'success' => false,
+                'message' => sprintf( __( 'Upload failed: %s', 'woo-nalda-sync' ), $presign_response->get_error_message() ),
+            );
+        }
+
+        $presign_body = json_decode( wp_remote_retrieve_body( $presign_response ), true );
+
+        // Check for presigned URL in response.
+        if ( empty( $presign_body ) || ! isset( $presign_body[0]['url'] ) ) {
+            $error_msg = isset( $presign_body['error']['message'] ) ? $presign_body['error']['message'] : __( 'Failed to get upload URL.', 'woo-nalda-sync' );
+            $this->log( 'Failed to get presigned URL: ' . $error_msg );
+            return array(
+                'success' => false,
+                'message' => $error_msg,
+            );
+        }
+
+        $presigned_url = $presign_body[0]['url'];
+        $file_key      = isset( $presign_body[0]['key'] ) ? $presign_body[0]['key'] : '';
+        $fields        = isset( $presign_body[0]['fields'] ) ? $presign_body[0]['fields'] : array();
+
+        // Step 2: Upload file directly to UploadThing storage.
+        // Build multipart form data for S3-style upload.
         $boundary = wp_generate_password( 24, false );
+        $body     = '';
 
-        $body = '';
-
-        // Add text fields.
-        $fields = array(
-            'domain'        => $this->license_manager->get_domain(),
-            'sftp_host'     => $settings['sftp_host'],
-            'sftp_port'     => isset( $settings['sftp_port'] ) ? $settings['sftp_port'] : 22,
-            'sftp_username' => $settings['sftp_username'],
-            'sftp_password' => $settings['sftp_password'],
-        );
-
-        foreach ( $fields as $name => $value ) {
+        // Add presigned fields.
+        foreach ( $fields as $field_name => $field_value ) {
             $body .= "--{$boundary}\r\n";
-            $body .= "Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n";
-            $body .= "{$value}\r\n";
+            $body .= "Content-Disposition: form-data; name=\"{$field_name}\"\r\n\r\n";
+            $body .= "{$field_value}\r\n";
         }
 
         // Add file.
-        $file_content = file_get_contents( $file_path );
-        $filename     = basename( $file_path );
-
         $body .= "--{$boundary}\r\n";
-        $body .= "Content-Disposition: form-data; name=\"csv\"; filename=\"{$filename}\"\r\n";
+        $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$filename}\"\r\n";
         $body .= "Content-Type: text/csv\r\n\r\n";
         $body .= "{$file_content}\r\n";
         $body .= "--{$boundary}--\r\n";
 
-        $response = wp_remote_post( $api_url, array(
-            'timeout'     => 120,
-            'headers'     => array(
-                'X-License-Key' => $license_key,
-                'Content-Type'  => 'multipart/form-data; boundary=' . $boundary,
-                'Accept'        => 'application/json',
+        $upload_response = wp_remote_post( $presigned_url, array(
+            'timeout' => 120,
+            'headers' => array(
+                'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
             ),
-            'body'        => $body,
+            'body'    => $body,
         ) );
 
-        if ( is_wp_error( $response ) ) {
-            $this->log( 'CSV upload failed: ' . $response->get_error_message() );
+        if ( is_wp_error( $upload_response ) ) {
+            $this->log( 'File upload failed: ' . $upload_response->get_error_message() );
             return array(
                 'success' => false,
-                'message' => sprintf( __( 'Upload failed: %s', 'woo-nalda-sync' ), $response->get_error_message() ),
+                'message' => sprintf( __( 'File upload failed: %s', 'woo-nalda-sync' ), $upload_response->get_error_message() ),
             );
         }
 
-        $status_code = wp_remote_retrieve_response_code( $response );
-        $body        = json_decode( wp_remote_retrieve_body( $response ), true );
+        $upload_status = wp_remote_retrieve_response_code( $upload_response );
+        if ( $upload_status < 200 || $upload_status >= 300 ) {
+            $this->log( 'File upload failed with status: ' . $upload_status );
+            return array(
+                'success' => false,
+                'message' => __( 'File upload to storage failed.', 'woo-nalda-sync' ),
+            );
+        }
 
-        if ( $status_code === 201 ) {
-            $this->log( 'CSV upload successful. Request ID: ' . ( isset( $body['data']['id'] ) ? $body['data']['id'] : 'N/A' ) );
+        // Step 3: Create CSV upload request with the file key.
+        $api_url = 'https://license-manager-jonakyds.vercel.app/api/v2/nalda/csv-upload';
+
+        $request_response = wp_remote_post( $api_url, array(
+            'timeout' => 60,
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ),
+            'body'    => wp_json_encode( array(
+                'license_key'   => $license_key,
+                'domain'        => $domain,
+                'sftp_host'     => $settings['sftp_host'],
+                'sftp_port'     => isset( $settings['sftp_port'] ) ? absint( $settings['sftp_port'] ) : 22,
+                'sftp_username' => $settings['sftp_username'],
+                'sftp_password' => $settings['sftp_password'],
+                'csv_file_key'  => $file_key,
+            ) ),
+        ) );
+
+        if ( is_wp_error( $request_response ) ) {
+            $this->log( 'CSV upload request failed: ' . $request_response->get_error_message() );
+            return array(
+                'success' => false,
+                'message' => sprintf( __( 'Upload request failed: %s', 'woo-nalda-sync' ), $request_response->get_error_message() ),
+            );
+        }
+
+        $request_status = wp_remote_retrieve_response_code( $request_response );
+        $request_body   = json_decode( wp_remote_retrieve_body( $request_response ), true );
+
+        if ( isset( $request_body['success'] ) && $request_body['success'] === true ) {
+            $request_id = isset( $request_body['data']['id'] ) ? $request_body['data']['id'] : 'N/A';
+            $this->log( 'CSV upload successful. Request ID: ' . $request_id );
             return array(
                 'success'    => true,
                 'message'    => __( 'CSV uploaded successfully.', 'woo-nalda-sync' ),
-                'request_id' => isset( $body['data']['id'] ) ? $body['data']['id'] : null,
+                'request_id' => $request_id,
+                'file_key'   => $file_key,
             );
         }
 
-        $error_message = isset( $body['message'] ) ? $body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' );
-        $this->log( 'CSV upload failed with status ' . $status_code . ': ' . $error_message );
+        // Handle error response.
+        $error_message = isset( $request_body['error']['message'] ) 
+            ? $request_body['error']['message'] 
+            : ( isset( $request_body['message'] ) ? $request_body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' ) );
+        
+        $this->log( 'CSV upload request failed with status ' . $request_status . ': ' . $error_message );
 
         return array(
             'success' => false,
@@ -829,7 +919,7 @@ class Woo_Nalda_Sync_Product_Sync {
     }
 
     /**
-     * Validate SFTP credentials.
+     * Validate SFTP credentials via Nalda API.
      *
      * @param array $credentials SFTP credentials.
      * @return array Result with success status and message.
@@ -844,20 +934,22 @@ class Woo_Nalda_Sync_Product_Sync {
             );
         }
 
-        $api_url = WOO_NALDA_SYNC_LICENSE_API_URL . '/sftp/validate';
+        // Use the new Nalda API v2 endpoint.
+        $api_url = 'https://license-manager-jonakyds.vercel.app/api/v2/nalda/sftp-validate';
 
         $response = wp_remote_post( $api_url, array(
             'timeout' => 30,
             'headers' => array(
-                'X-License-Key' => $license_key,
-                'Content-Type'  => 'application/json',
-                'Accept'        => 'application/json',
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
             ),
             'body'    => wp_json_encode( array(
-                'sftp_host'     => $credentials['sftp_host'],
-                'sftp_port'     => isset( $credentials['sftp_port'] ) ? absint( $credentials['sftp_port'] ) : 22,
-                'sftp_username' => $credentials['sftp_username'],
-                'sftp_password' => $credentials['sftp_password'],
+                'license_key' => $license_key,
+                'domain'      => $this->license_manager->get_domain(),
+                'hostname'    => $credentials['sftp_host'],
+                'port'        => isset( $credentials['sftp_port'] ) ? absint( $credentials['sftp_port'] ) : 22,
+                'username'    => $credentials['sftp_username'],
+                'password'    => $credentials['sftp_password'],
             ) ),
         ) );
 
@@ -871,18 +963,41 @@ class Woo_Nalda_Sync_Product_Sync {
         $status_code = wp_remote_retrieve_response_code( $response );
         $body        = json_decode( wp_remote_retrieve_body( $response ), true );
 
-        if ( $status_code === 200 ) {
+        // Check for success response.
+        if ( isset( $body['success'] ) && $body['success'] === true ) {
+            $server_info = isset( $body['data']['serverInfo'] ) ? $body['data']['serverInfo'] : array();
             return array(
-                'success' => true,
-                'message' => __( 'SFTP credentials are valid.', 'woo-nalda-sync' ),
+                'success'     => true,
+                'message'     => __( 'SFTP credentials are valid.', 'woo-nalda-sync' ),
+                'server_info' => $server_info,
             );
         }
 
-        $error_message = isset( $body['message'] ) ? $body['message'] : __( 'Validation failed.', 'woo-nalda-sync' );
+        // Handle error response.
+        $error_code    = isset( $body['error']['code'] ) ? $body['error']['code'] : '';
+        $error_message = isset( $body['error']['message'] ) ? $body['error']['message'] : __( 'Validation failed.', 'woo-nalda-sync' );
+
+        // Map error codes to user-friendly messages.
+        $error_messages = array(
+            'AUTH_FAILED'         => __( 'Invalid SFTP username or password.', 'woo-nalda-sync' ),
+            'HOST_NOT_FOUND'      => __( 'SFTP server hostname not found.', 'woo-nalda-sync' ),
+            'CONNECTION_TIMEOUT'  => __( 'Connection timed out. Please check the hostname and port.', 'woo-nalda-sync' ),
+            'CONNECTION_REFUSED'  => __( 'Connection refused by the SFTP server.', 'woo-nalda-sync' ),
+            'HOST_UNREACHABLE'    => __( 'SFTP server is unreachable.', 'woo-nalda-sync' ),
+            'LICENSE_NOT_FOUND'   => __( 'Invalid license key.', 'woo-nalda-sync' ),
+            'LICENSE_EXPIRED'     => __( 'Your license has expired.', 'woo-nalda-sync' ),
+            'DOMAIN_MISMATCH'     => __( 'Domain is not activated for this license.', 'woo-nalda-sync' ),
+            'RATE_LIMIT_EXCEEDED' => __( 'Too many requests. Please wait a few minutes.', 'woo-nalda-sync' ),
+        );
+
+        if ( isset( $error_messages[ $error_code ] ) ) {
+            $error_message = $error_messages[ $error_code ];
+        }
 
         return array(
-            'success' => false,
-            'message' => $error_message,
+            'success'    => false,
+            'message'    => $error_message,
+            'error_code' => $error_code,
         );
     }
 
@@ -937,11 +1052,12 @@ class Woo_Nalda_Sync_Product_Sync {
     /**
      * Get CSV upload history from API.
      *
-     * @param int $per_page Number of results per page.
-     * @param int $page     Page number.
+     * @param int    $per_page Number of results per page.
+     * @param int    $page     Page number.
+     * @param string $status   Optional status filter (pending, processing, processed, failed).
      * @return array Result with uploads data or error message.
      */
-    public function get_upload_history( $per_page = 10, $page = 1 ) {
+    public function get_upload_history( $per_page = 10, $page = 1, $status = '' ) {
         $license_key = $this->license_manager->get_license_key();
 
         if ( empty( $license_key ) ) {
@@ -951,16 +1067,24 @@ class Woo_Nalda_Sync_Product_Sync {
             );
         }
 
-        $api_url = WOO_NALDA_SYNC_LICENSE_API_URL . '/nalda/csv-uploads';
+        // Use the new Nalda API v2 endpoint.
+        $api_url = 'https://license-manager-jonakyds.vercel.app/api/v2/nalda/csv-upload/list';
 
-        $response = wp_remote_get( add_query_arg( array(
-            'per_page' => absint( $per_page ),
-            'page'     => absint( $page ),
-        ), $api_url ), array(
+        $query_args = array(
+            'license_key' => $license_key,
+            'domain'      => $this->license_manager->get_domain(),
+            'page'        => absint( $page ),
+            'limit'       => absint( $per_page ),
+        );
+
+        if ( ! empty( $status ) ) {
+            $query_args['status'] = sanitize_text_field( $status );
+        }
+
+        $response = wp_remote_get( add_query_arg( $query_args, $api_url ), array(
             'timeout' => 30,
             'headers' => array(
-                'X-License-Key' => $license_key,
-                'Accept'        => 'application/json',
+                'Accept' => 'application/json',
             ),
         ) );
 
@@ -972,18 +1096,21 @@ class Woo_Nalda_Sync_Product_Sync {
             );
         }
 
-        $status_code = wp_remote_retrieve_response_code( $response );
-        $body        = json_decode( wp_remote_retrieve_body( $response ), true );
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
-        if ( $status_code === 200 ) {
+        if ( isset( $body['success'] ) && $body['success'] === true ) {
             return array(
-                'success' => true,
-                'data'    => isset( $body['data'] ) ? $body['data'] : array(),
-                'meta'    => isset( $body['meta'] ) ? $body['meta'] : array(),
+                'success'    => true,
+                'data'       => isset( $body['data']['requests'] ) ? $body['data']['requests'] : array(),
+                'pagination' => isset( $body['data']['pagination'] ) ? $body['data']['pagination'] : array(),
             );
         }
 
-        $error_message = isset( $body['message'] ) ? $body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' );
+        // Handle error response.
+        $error_message = isset( $body['error']['message'] ) 
+            ? $body['error']['message'] 
+            : ( isset( $body['message'] ) ? $body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' ) );
+        
         $this->log( 'Failed to fetch upload history: ' . $error_message );
 
         return array(
