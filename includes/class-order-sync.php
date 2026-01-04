@@ -368,6 +368,11 @@ class Woo_Nalda_Sync_Order_Sync {
             // Calculate totals without recalculating taxes (prices are already VAT-included).
             $order->calculate_totals( false );
 
+            // Set payment method.
+            $order->set_payment_method( 'nalda' );
+            $order->set_payment_method_title( 'Nalda' );
+            $order->set_date_paid( strtotime( isset( $nalda_order['createdAt'] ) ? $nalda_order['createdAt'] : 'now' ) );
+
             // Set Nalda metadata.
             $order->update_meta_data( '_nalda_order_id', $nalda_order['orderId'] );
             $order->update_meta_data( '_nalda_payout_status', isset( $nalda_order['payoutStatus'] ) ? $nalda_order['payoutStatus'] : '' );
@@ -376,6 +381,7 @@ class Woo_Nalda_Sync_Order_Sync {
             $order->update_meta_data( '_nalda_imported_at', current_time( 'mysql' ) );
             $order->update_meta_data( '_order_source', 'nalda.com' );
             $order->update_meta_data( '_created_via', 'nalda' );
+            $order->update_meta_data( '_paid_via', 'Nalda' );
 
             // Add collection info if available.
             if ( ! empty( $nalda_order['collectionId'] ) ) {
