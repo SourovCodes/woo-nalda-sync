@@ -175,6 +175,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Default Sync Behavior', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Control which products are synced by default. You can override this per product.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <select name="sync_default_mode" class="wns-form-select">
+                                <option value="include_all" <?php selected( isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all', 'include_all' ); ?>><?php esc_html_e( 'Sync all products (opt-out)', 'woo-nalda-sync' ); ?></option>
+                                <option value="exclude_all" <?php selected( isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all', 'exclude_all' ); ?>><?php esc_html_e( 'Sync no products (opt-in)', 'woo-nalda-sync' ); ?></option>
+                            </select>
+                            <p class="wns-form-hint" style="margin-top: 8px;">
+                                <?php esc_html_e( 'Tip: Manage individual products from Products → All Products → "Nalda" column.', 'woo-nalda-sync' ); ?>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
                             <div class="wns-settings-row-label"><?php esc_html_e( 'Sync Schedule', 'woo-nalda-sync' ); ?></div>
                             <p class="wns-settings-row-desc"><?php esc_html_e( 'How often should the sync run automatically.', 'woo-nalda-sync' ); ?></p>
                         </div>

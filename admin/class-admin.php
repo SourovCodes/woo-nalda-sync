@@ -243,6 +243,7 @@ class Woo_Nalda_Sync_Admin {
             
             // Sync Status
             'product_sync_enabled'   => isset( $data['product_sync_enabled'] ) ? 'yes' : 'no',
+            'sync_default_mode'      => isset( $data['sync_default_mode'] ) ? sanitize_text_field( $data['sync_default_mode'] ) : 'include_all',
             
             // Order Sync Settings
             'order_sync_enabled'     => isset( $data['order_sync_enabled'] ) ? 'yes' : 'no',

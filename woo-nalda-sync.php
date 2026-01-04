@@ -106,6 +106,7 @@ final class Woo_Nalda_Sync {
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-license-manager.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-sync.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-order-sync.php';
+        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-meta.php';
         
         if ( is_admin() ) {
             require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/class-admin.php';
@@ -139,6 +140,11 @@ final class Woo_Nalda_Sync {
         // Initialize sync classes.
         $this->product_sync = new Woo_Nalda_Sync_Product_Sync( $this->license );
         $this->order_sync   = new Woo_Nalda_Sync_Order_Sync( $this->license );
+
+        // Initialize product meta (for per-product sync settings).
+        if ( is_admin() ) {
+            new Woo_Nalda_Sync_Product_Meta();
+        }
 
         // Initialize admin.
         if ( is_admin() ) {

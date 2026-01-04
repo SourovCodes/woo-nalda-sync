@@ -88,6 +88,32 @@ class Woo_Nalda_Sync_Product_Sync {
     }
 
     /**
+     * Check if a product should be synced based on per-product settings.
+     *
+     * @param int $product_id Product ID.
+     * @return bool Whether the product should be synced.
+     */
+    private function should_sync_product( $product_id ) {
+        $meta_value = get_post_meta( $product_id, '_nalda_sync_enabled', true );
+
+        // If explicitly set, use that value.
+        if ( 'yes' === $meta_value ) {
+            return true;
+        }
+
+        if ( 'no' === $meta_value ) {
+            return false;
+        }
+
+        // Otherwise, use the default mode from settings.
+        $settings     = woo_nalda_sync()->get_setting();
+        $default_mode = isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all';
+
+        // 'include_all' means sync by default, 'exclude_all' means don't sync by default.
+        return 'include_all' === $default_mode;
+    }
+
+    /**
      * Run scheduled sync.
      */
     public function run_scheduled_sync() {
@@ -228,6 +254,11 @@ class Woo_Nalda_Sync_Product_Sync {
             }
 
             foreach ( $products as $product ) {
+                // Check if product should be synced based on per-product settings.
+                if ( ! $this->should_sync_product( $product->get_id() ) ) {
+                    continue;
+                }
+
                 $row = $this->get_product_row( $product );
                 
                 if ( $row ) {
