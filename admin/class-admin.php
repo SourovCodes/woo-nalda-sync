@@ -191,6 +191,8 @@ class Woo_Nalda_Sync_Admin {
                 'view'              => __( 'View', 'woo-nalda-sync' ),
                 'showMore'          => __( 'Show more', 'woo-nalda-sync' ),
                 'showLess'          => __( 'Show less', 'woo-nalda-sync' ),
+                'queued'            => __( 'Queued', 'woo-nalda-sync' ),
+                'processing'        => __( 'Processing...', 'woo-nalda-sync' ),
             ),
         ) );
     }

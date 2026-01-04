@@ -265,6 +265,18 @@
     font-size: 12px;
 }
 
+.wns-btn-xs {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+}
+
+.wns-btn-xs .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
 .wns-btn-lg {
     padding: 14px 28px;
     font-size: 16px;
@@ -2190,6 +2202,15 @@
 .wns-text-error {
     color: var(--wns-danger);
     font-size: 12px;
+}
+
+.wns-text-success {
+    color: var(--wns-success) !important;
+}
+
+.wns-text-info {
+    color: var(--wns-info) !important;
+    font-size: 13px;
 }
 
 .wns-upload-history-pagination {

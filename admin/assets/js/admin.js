@@ -555,18 +555,29 @@
                 const processedAt = upload.processed_at ? self.formatDate(upload.processed_at) : '—';
 
                 // Build error/action cell content.
-                // Note: New API v2 uses 'csv_file_key' instead of 'csv_url'.
+                // API v2 returns csv_file_url for downloading the CSV file.
                 let actionCell = '';
                 if (upload.error_message) {
                     actionCell = self.renderErrorMessage(upload.error_message);
-                } else if (upload.csv_file_key && upload.status === 'processed') {
-                    // Show file key for processed uploads.
-                    actionCell = '<span class="wns-text-muted" title="' + self.escapeHtml(upload.csv_file_key) + '">' +
-                        '<span class="dashicons dashicons-yes-alt wns-text-success"></span> Uploaded' +
-                        '</span>';
-                } else if (upload.csv_file_key) {
+                } else if (upload.csv_file_url) {
+                    // Show download link if CSV URL is available.
+                    const fileName = upload.csv_file_name || 'products.csv';
+                    actionCell = '<a href="' + self.escapeHtml(upload.csv_file_url) + '" ' +
+                        'class="wns-btn wns-btn-secondary wns-btn-xs" ' +
+                        'target="_blank" rel="noopener noreferrer" ' +
+                        'title="' + self.escapeHtml(fileName) + '">' +
+                        '<span class="dashicons dashicons-download"></span> ' +
+                        (wooNaldaSync.strings.download || 'Download') +
+                        '</a>';
+                } else if (upload.csv_file_key && upload.status === 'pending') {
                     actionCell = '<span class="wns-text-muted">' +
-                        '<span class="dashicons dashicons-clock"></span> Queued' +
+                        '<span class="dashicons dashicons-clock"></span> ' +
+                        (wooNaldaSync.strings.queued || 'Queued') +
+                        '</span>';
+                } else if (upload.csv_file_key && upload.status === 'processing') {
+                    actionCell = '<span class="wns-text-info">' +
+                        '<span class="dashicons dashicons-update wns-spin"></span> ' +
+                        (wooNaldaSync.strings.processing || 'Processing') +
                         '</span>';
                 } else {
                     actionCell = '—';
@@ -578,7 +589,7 @@
                     '<td data-label="Domain" class="wns-hide-mobile">' + self.escapeHtml(upload.domain) + '</td>' +
                     '<td data-label="Created">' + createdAt + '</td>' +
                     '<td data-label="Processed" class="wns-hide-mobile">' + processedAt + '</td>' +
-                    '<td data-label="Status" class="wns-action-cell">' + actionCell + '</td>' +
+                    '<td data-label="Action" class="wns-action-cell">' + actionCell + '</td>' +
                     '</tr>');
 
                 $tbody.append($row);

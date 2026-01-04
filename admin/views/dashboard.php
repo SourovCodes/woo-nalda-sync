@@ -352,7 +352,7 @@ $setup_percentage = ( $setup_progress / 4 ) * 100;
                             <th class="wns-hide-mobile"><?php esc_html_e( 'Domain', 'woo-nalda-sync' ); ?></th>
                             <th><?php esc_html_e( 'Created', 'woo-nalda-sync' ); ?></th>
                             <th class="wns-hide-mobile"><?php esc_html_e( 'Processed', 'woo-nalda-sync' ); ?></th>
-                            <th><?php esc_html_e( 'Error / CSV', 'woo-nalda-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Action', 'woo-nalda-sync' ); ?></th>
                         </tr>
                     </thead>
                     <tbody></tbody>
