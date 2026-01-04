@@ -27,7 +27,7 @@ define( 'WOO_NALDA_SYNC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PRODUCT_SLUG', 'woo-nalda-sync' );
-define( 'WOO_NALDA_SYNC_LICENSE_API_URL', 'https://licence-manager.jonakyds.com/api/v1' );
+define( 'WOO_NALDA_SYNC_LICENSE_API_URL', 'https://license-manager-jonakyds.vercel.app/api/v2/licenses' );
 
 /**
  * Declare compatibility with WooCommerce features.

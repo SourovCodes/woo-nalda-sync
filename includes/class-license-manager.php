@@ -184,10 +184,10 @@ class Woo_Nalda_Sync_License_Manager {
      * @return array Response data.
      */
     public function activate( $license_key ) {
-        $response = $this->api_request( '/license/activate', array(
+        $response = $this->api_request( '/activate', array(
             'license_key'  => sanitize_text_field( $license_key ),
-            'domain'       => $this->get_domain(),
             'product_slug' => $this->product_slug,
+            'domain'       => $this->get_domain(),
         ) );
 
         if ( $this->is_success_response( $response ) ) {
@@ -231,18 +231,20 @@ class Woo_Nalda_Sync_License_Manager {
             );
         }
 
-        $response = $this->api_request( '/license/validate', array(
+        $response = $this->api_request( '/validate', array(
             'license_key'  => $license_key,
-            'domain'       => $this->get_domain(),
             'product_slug' => $this->product_slug,
+            'domain'       => $this->get_domain(),
         ) );
 
         if ( $this->is_success_response( $response ) ) {
-            // Update license data.
+            // Update license data from v2 API response.
             $license_data = $this->get_license_data();
+            $response_data = isset( $response['data'] ) ? $response['data'] : array();
+
             $license_data['status']         = 'active';
-            $license_data['expires_at']     = isset( $response['expires_at'] ) ? $response['expires_at'] : $license_data['expires_at'];
-            $license_data['days_remaining'] = isset( $response['days_remaining'] ) ? $response['days_remaining'] : $license_data['days_remaining'];
+            $license_data['expires_at']     = isset( $response_data['expires_at'] ) ? $response_data['expires_at'] : ( isset( $license_data['expires_at'] ) ? $license_data['expires_at'] : null );
+            $license_data['days_remaining'] = isset( $response_data['days_remaining'] ) ? $response_data['days_remaining'] : ( isset( $license_data['days_remaining'] ) ? $license_data['days_remaining'] : null );
 
             update_option( self::LICENSE_DATA_OPTION, $license_data );
             update_option( self::LAST_VALIDATION_OPTION, time() );
@@ -298,15 +300,15 @@ class Woo_Nalda_Sync_License_Manager {
 
         $request_data = array(
             'license_key'  => $license_key,
-            'domain'       => $this->get_domain(),
             'product_slug' => $this->product_slug,
+            'domain'       => $this->get_domain(),
         );
 
         if ( ! empty( $reason ) ) {
             $request_data['reason'] = sanitize_text_field( $reason );
         }
 
-        $response = $this->api_request( '/license/deactivate', $request_data );
+        $response = $this->api_request( '/deactivate', $request_data );
 
         if ( $this->is_success_response( $response ) ) {
             // Clear license data.
@@ -342,8 +344,9 @@ class Woo_Nalda_Sync_License_Manager {
             );
         }
 
-        $response = $this->api_request( '/license/status', array(
-            'license_key' => $license_key,
+        $response = $this->api_request( '/status', array(
+            'license_key'  => $license_key,
+            'product_slug' => $this->product_slug,
         ) );
 
         if ( isset( $response['data'] ) ) {
@@ -386,18 +389,23 @@ class Woo_Nalda_Sync_License_Manager {
 
         $status_code = wp_remote_retrieve_response_code( $response );
         $body        = wp_remote_retrieve_body( $response );
-        $data        = json_decode( $body, true );
+        $result      = json_decode( $body, true );
 
-        if ( ! is_array( $data ) ) {
+        if ( ! is_array( $result ) ) {
             return array(
                 'error'   => true,
                 'message' => __( 'Invalid API response.', 'woo-nalda-sync' ),
             );
         }
 
-        $data['status_code'] = $status_code;
+        $result['status_code'] = $status_code;
 
-        return $data;
+        // Extract error message from v2 API error response format.
+        if ( isset( $result['error'] ) && is_array( $result['error'] ) && isset( $result['error']['message'] ) ) {
+            $result['message'] = $result['error']['message'];
+        }
+
+        return $result;
     }
 
     /**
@@ -407,11 +415,13 @@ class Woo_Nalda_Sync_License_Manager {
      * @return bool
      */
     private function is_success_response( $response ) {
+        // Check for network/connection errors.
         if ( isset( $response['error'] ) && $response['error'] ) {
             return false;
         }
 
-        if ( isset( $response['status_code'] ) && $response['status_code'] === 200 ) {
+        // v2 API uses 'success' field in response body.
+        if ( isset( $response['success'] ) && $response['success'] === true ) {
             return true;
         }
 
