@@ -44,8 +44,6 @@ class Woo_Nalda_Sync_Product_Meta {
         // Add column to products list.
         add_filter( 'manage_edit-product_columns', array( $this, 'add_product_column' ), 20 );
         add_action( 'manage_product_posts_custom_column', array( $this, 'render_product_column' ), 10, 2 );
-        add_filter( 'manage_edit-product_sortable_columns', array( $this, 'make_column_sortable' ) );
-        add_action( 'pre_get_posts', array( $this, 'sort_by_sync_status' ) );
 
         // Add bulk actions.
         add_filter( 'bulk_actions-edit-product', array( $this, 'add_bulk_actions' ) );
@@ -462,33 +460,6 @@ class Woo_Nalda_Sync_Product_Meta {
             esc_attr( $icon ),
             esc_html( $label )
         );
-    }
-
-    /**
-     * Make Nalda column sortable.
-     *
-     * @param array $columns Sortable columns.
-     * @return array Modified columns.
-     */
-    public function make_column_sortable( $columns ) {
-        $columns['nalda_sync'] = 'nalda_sync';
-        return $columns;
-    }
-
-    /**
-     * Handle sorting by Nalda sync status.
-     *
-     * @param WP_Query $query Query object.
-     */
-    public function sort_by_sync_status( $query ) {
-        if ( ! is_admin() || ! $query->is_main_query() ) {
-            return;
-        }
-
-        if ( 'nalda_sync' === $query->get( 'orderby' ) ) {
-            $query->set( 'meta_key', self::META_KEY_SYNC_ENABLED );
-            $query->set( 'orderby', 'meta_value' );
-        }
     }
 
     /**
