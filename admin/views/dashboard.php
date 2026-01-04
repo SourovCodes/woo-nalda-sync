@@ -32,8 +32,9 @@ $setup_progress   = 0;
 if ( $is_licensed ) $setup_progress++;
 if ( $sftp_configured ) $setup_progress++;
 if ( $api_configured ) $setup_progress++;
-if ( $product_sync_status || $order_sync_status ) $setup_progress++;
-$setup_percentage = ( $setup_progress / 4 ) * 100;
+if ( $product_sync_status ) $setup_progress++;
+if ( $order_sync_status ) $setup_progress++;
+$setup_percentage = ( $setup_progress / 5 ) * 100;
 ?>
 
 <div class="wns-wrap">
@@ -384,7 +385,7 @@ $setup_percentage = ( $setup_progress / 4 ) * 100;
                     <span class="dashicons dashicons-welcome-learn-more"></span>
                     <?php esc_html_e( 'Setup Checklist', 'woo-nalda-sync' ); ?>
                 </h2>
-                <span class="wns-progress-text"><?php echo esc_html( $setup_progress ); ?>/4</span>
+                <span class="wns-progress-text"><?php echo esc_html( $setup_progress ); ?>/5</span>
             </div>
             <div class="wns-card-body">
                 <div class="wns-progress-bar">
@@ -452,20 +453,40 @@ $setup_percentage = ( $setup_progress / 4 ) * 100;
                         <?php endif; ?>
                     </div>
 
-                    <!-- Step 4: Auto Sync -->
-                    <div class="wns-checklist-item <?php echo ( $product_sync_status || $order_sync_status ) ? 'completed' : ''; ?>">
+                    <!-- Step 4: Product Sync -->
+                    <div class="wns-checklist-item <?php echo $product_sync_status ? 'completed' : ''; ?>">
                         <div class="wns-checklist-icon">
-                            <?php if ( $product_sync_status || $order_sync_status ) : ?>
+                            <?php if ( $product_sync_status ) : ?>
                                 <span class="dashicons dashicons-yes-alt"></span>
                             <?php else : ?>
                                 <span class="wns-step-num">4</span>
                             <?php endif; ?>
                         </div>
                         <div class="wns-checklist-content">
-                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Auto Sync', 'woo-nalda-sync' ); ?></div>
-                            <div class="wns-checklist-desc"><?php esc_html_e( 'Schedule automatic data syncing.', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Product Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-checklist-desc"><?php esc_html_e( 'Auto-export products to Nalda.', 'woo-nalda-sync' ); ?></div>
                         </div>
-                        <?php if ( ! $product_sync_status && ! $order_sync_status ) : ?>
+                        <?php if ( ! $product_sync_status ) : ?>
+                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-checklist-action">
+                                <?php esc_html_e( 'Enable', 'woo-nalda-sync' ); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Step 5: Order Sync -->
+                    <div class="wns-checklist-item <?php echo $order_sync_status ? 'completed' : ''; ?>">
+                        <div class="wns-checklist-icon">
+                            <?php if ( $order_sync_status ) : ?>
+                                <span class="dashicons dashicons-yes-alt"></span>
+                            <?php else : ?>
+                                <span class="wns-step-num">5</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="wns-checklist-content">
+                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Order Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-checklist-desc"><?php esc_html_e( 'Auto-import orders from Nalda.', 'woo-nalda-sync' ); ?></div>
+                        </div>
+                        <?php if ( ! $order_sync_status ) : ?>
                             <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-checklist-action">
                                 <?php esc_html_e( 'Enable', 'woo-nalda-sync' ); ?>
                             </a>
