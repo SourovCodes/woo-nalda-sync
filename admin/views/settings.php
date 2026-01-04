@@ -305,6 +305,22 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </select>
                         </div>
                     </div>
+
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Order Import Range', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Date range for importing orders from Nalda. Determines how far back to look for orders.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <select name="order_import_range" class="wns-form-select">
+                                <option value="today" <?php selected( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today', 'today' ); ?>><?php esc_html_e( 'Today', 'woo-nalda-sync' ); ?></option>
+                                <option value="yesterday" <?php selected( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today', 'yesterday' ); ?>><?php esc_html_e( 'Yesterday', 'woo-nalda-sync' ); ?></option>
+                                <option value="current-month" <?php selected( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today', 'current-month' ); ?>><?php esc_html_e( 'Current Month', 'woo-nalda-sync' ); ?></option>
+                                <option value="3m" <?php selected( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today', '3m' ); ?>><?php esc_html_e( 'Last 3 Months', 'woo-nalda-sync' ); ?></option>
+                                <option value="6m" <?php selected( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today', '6m' ); ?>><?php esc_html_e( 'Last 6 Months', 'woo-nalda-sync' ); ?></option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

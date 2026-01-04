@@ -248,6 +248,7 @@ class Woo_Nalda_Sync_Admin {
             // Order Sync Settings
             'order_sync_enabled'     => isset( $data['order_sync_enabled'] ) ? 'yes' : 'no',
             'order_sync_schedule'    => isset( $data['order_sync_schedule'] ) ? sanitize_text_field( $data['order_sync_schedule'] ) : 'hourly',
+            'order_import_range'     => isset( $data['order_import_range'] ) ? sanitize_text_field( $data['order_import_range'] ) : 'today',
             
             // Nalda API Settings
             'nalda_api_key'          => isset( $data['nalda_api_key'] ) ? sanitize_text_field( $data['nalda_api_key'] ) : '',

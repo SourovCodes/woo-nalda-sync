@@ -67,7 +67,10 @@ class Woo_Nalda_Sync_Order_Sync {
             return;
         }
 
-        $this->run_sync();
+        // Get the configured import range.
+        $range = isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today';
+
+        $this->run_sync( $range );
     }
 
     /**
