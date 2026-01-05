@@ -83,6 +83,8 @@ class Woo_Nalda_Sync_Admin {
         add_action( 'wp_ajax_woo_nalda_sync_run_product_sync', array( $this, 'ajax_run_product_sync' ) );
         add_action( 'wp_ajax_woo_nalda_sync_run_order_sync', array( $this, 'ajax_run_order_sync' ) );
         add_action( 'wp_ajax_woo_nalda_sync_get_upload_history', array( $this, 'ajax_get_upload_history' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_get_sync_logs', array( $this, 'ajax_get_sync_logs' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_clear_sync_logs', array( $this, 'ajax_clear_sync_logs' ) );
 
         // Plugin action links.
         add_filter( 'plugin_action_links_' . WOO_NALDA_SYNC_PLUGIN_BASENAME, array( $this, 'plugin_action_links' ) );
@@ -131,6 +133,16 @@ class Woo_Nalda_Sync_Admin {
             'manage_woocommerce',
             'woo-nalda-sync-license',
             array( $this, 'render_license_page' )
+        );
+
+        // Logs submenu.
+        add_submenu_page(
+            'woo-nalda-sync',
+            __( 'Logs', 'woo-nalda-sync' ),
+            __( 'Logs', 'woo-nalda-sync' ),
+            'manage_woocommerce',
+            'woo-nalda-sync-logs',
+            array( $this, 'render_logs_page' )
         );
     }
 
@@ -193,6 +205,19 @@ class Woo_Nalda_Sync_Admin {
                 'showLess'          => __( 'Show less', 'woo-nalda-sync' ),
                 'queued'            => __( 'Queued', 'woo-nalda-sync' ),
                 'processing'        => __( 'Processing...', 'woo-nalda-sync' ),
+                // Sync logs strings.
+                'loadingLogs'       => __( 'Loading logs...', 'woo-nalda-sync' ),
+                'confirmClearLogs'  => __( 'Are you sure you want to clear all sync logs?', 'woo-nalda-sync' ),
+                'noLogs'            => __( 'No sync logs yet. Run a sync to see activity here.', 'woo-nalda-sync' ),
+                'logTime'           => __( 'Time', 'woo-nalda-sync' ),
+                'logType'           => __( 'Type', 'woo-nalda-sync' ),
+                'logTrigger'        => __( 'Trigger', 'woo-nalda-sync' ),
+                'logStatus'         => __( 'Status', 'woo-nalda-sync' ),
+                'logSummary'        => __( 'Summary', 'woo-nalda-sync' ),
+                'productExport'     => __( 'Product Export', 'woo-nalda-sync' ),
+                'orderImport'       => __( 'Order Import', 'woo-nalda-sync' ),
+                'triggerManual'     => __( 'Manual', 'woo-nalda-sync' ),
+                'triggerAutomatic'  => __( 'Automatic', 'woo-nalda-sync' ),
             ),
         ) );
     }
@@ -334,7 +359,7 @@ class Woo_Nalda_Sync_Admin {
             wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
         }
 
-        $result = $this->product_sync->run_sync();
+        $result = $this->product_sync->run_sync( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );
@@ -362,7 +387,7 @@ class Woo_Nalda_Sync_Admin {
             $settings = woo_nalda_sync()->get_setting();
             $range    = isset( $_POST['range'] ) ? sanitize_text_field( wp_unslash( $_POST['range'] ) ) : ( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today' );
             
-            $result = $this->order_sync->run_sync( $range );
+            $result = $this->order_sync->run_sync( $range, Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
             if ( $result['success'] ) {
                 wp_send_json_success( $result );
@@ -374,6 +399,38 @@ class Woo_Nalda_Sync_Admin {
                 'message' => sprintf( __( 'Error: %s', 'woo-nalda-sync' ), $e->getMessage() ),
             ) );
         }
+    }
+
+    /**
+     * AJAX: Get sync logs.
+     */
+    public function ajax_get_sync_logs() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        $limit = isset( $_POST['limit'] ) ? absint( $_POST['limit'] ) : 20;
+
+        $logs = woo_nalda_sync_logger()->get_recent_logs( $limit );
+
+        wp_send_json_success( array( 'logs' => $logs ) );
+    }
+
+    /**
+     * AJAX: Clear sync logs.
+     */
+    public function ajax_clear_sync_logs() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        woo_nalda_sync_logger()->clear_logs();
+
+        wp_send_json_success( array( 'message' => __( 'Logs cleared successfully.', 'woo-nalda-sync' ) ) );
     }
 
     /**
@@ -577,5 +634,12 @@ class Woo_Nalda_Sync_Admin {
         $expiration_date = $this->license_manager->get_expiration_date();
 
         include WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/views/license.php';
+    }
+
+    /**
+     * Render logs page.
+     */
+    public function render_logs_page() {
+        include WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/views/logs.php';
     }
 }

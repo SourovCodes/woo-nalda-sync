@@ -128,23 +128,34 @@ class Woo_Nalda_Sync_Product_Sync {
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
             $this->log( 'License is not valid. Skipping scheduled sync.' );
+            woo_nalda_sync_logger()->log_product_export(
+                Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'License is not valid', 'woo-nalda-sync' )
+            );
             return;
         }
 
-        $this->run_sync();
+        $this->run_sync( Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC );
     }
 
     /**
      * Run product sync.
      *
+     * @param string $trigger Trigger type (manual or automatic). Default: manual.
      * @return array Result with success status and message.
      */
-    public function run_sync() {
+    public function run_sync( $trigger = 'manual' ) {
         $start_time = microtime( true );
         $this->log( 'Starting product sync...' );
 
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
+            woo_nalda_sync_logger()->log_product_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'License is not valid', 'woo-nalda-sync' )
+            );
             return array(
                 'success' => false,
                 'message' => __( 'License is not valid.', 'woo-nalda-sync' ),
@@ -156,6 +167,11 @@ class Woo_Nalda_Sync_Product_Sync {
         // Validate SFTP settings.
         if ( empty( $settings['sftp_host'] ) || empty( $settings['sftp_username'] ) || empty( $settings['sftp_password'] ) ) {
             $this->log( 'SFTP settings are not configured.' );
+            woo_nalda_sync_logger()->log_product_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'SFTP settings are not configured', 'woo-nalda-sync' )
+            );
             return array(
                 'success' => false,
                 'message' => __( 'SFTP settings are not configured.', 'woo-nalda-sync' ),
@@ -166,6 +182,11 @@ class Woo_Nalda_Sync_Product_Sync {
         $csv_result = $this->generate_csv();
 
         if ( ! $csv_result['success'] ) {
+            woo_nalda_sync_logger()->log_product_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                $csv_result['message']
+            );
             return $csv_result;
         }
 
@@ -178,6 +199,11 @@ class Woo_Nalda_Sync_Product_Sync {
         }
 
         if ( ! $upload_result['success'] ) {
+            woo_nalda_sync_logger()->log_product_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                $upload_result['message']
+            );
             return $upload_result;
         }
 
@@ -187,6 +213,22 @@ class Woo_Nalda_Sync_Product_Sync {
         $this->update_sync_stats( $csv_result['product_count'] );
 
         $this->log( sprintf( 'Product sync completed successfully in %s seconds. %d products exported.', $duration, $csv_result['product_count'] ) );
+
+        // Log success.
+        $summary = sprintf(
+            __( 'Exported %d products in %s seconds', 'woo-nalda-sync' ),
+            $csv_result['product_count'],
+            $duration
+        );
+        woo_nalda_sync_logger()->log_product_export(
+            $trigger,
+            Woo_Nalda_Sync_Logger::STATUS_SUCCESS,
+            $summary,
+            array(
+                'product_count' => $csv_result['product_count'],
+                'duration'      => $duration,
+            )
+        );
 
         return array(
             'success'       => true,

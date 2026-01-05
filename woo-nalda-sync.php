@@ -107,6 +107,7 @@ final class Woo_Nalda_Sync {
      */
     private function includes() {
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-license-manager.php';
+        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-sync-logger.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-sync.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-order-sync.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-meta.php';

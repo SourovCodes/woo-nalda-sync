@@ -64,28 +64,39 @@ class Woo_Nalda_Sync_Order_Sync {
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
             $this->log( 'License is not valid. Skipping scheduled sync.' );
+            woo_nalda_sync_logger()->log_order_import(
+                Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'License is not valid', 'woo-nalda-sync' )
+            );
             return;
         }
 
         // Get the configured import range.
         $range = isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today';
 
-        $this->run_sync( $range );
+        $this->run_sync( $range, Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC );
     }
 
     /**
      * Run order sync.
      *
-     * @param string $range Date range for orders (default: 'today').
+     * @param string $range   Date range for orders (default: 'today').
+     * @param string $trigger Trigger type (manual or automatic). Default: manual.
      * @return array Result with success status and message.
      */
-    public function run_sync( $range = 'today' ) {
+    public function run_sync( $range = 'today', $trigger = 'manual' ) {
         $start_time = microtime( true );
         $this->log( sprintf( 'Starting order sync with range: %s', $range ) );
 
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
             $this->log( 'License validation failed.' );
+            woo_nalda_sync_logger()->log_order_import(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'License is not valid', 'woo-nalda-sync' )
+            );
             return array(
                 'success' => false,
                 'message' => __( 'License is not valid.', 'woo-nalda-sync' ),
@@ -97,6 +108,11 @@ class Woo_Nalda_Sync_Order_Sync {
         // Validate Nalda API settings.
         if ( empty( $settings['nalda_api_key'] ) ) {
             $this->log( 'Nalda API key is not configured.' );
+            woo_nalda_sync_logger()->log_order_import(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'Nalda API key is not configured', 'woo-nalda-sync' )
+            );
             return array(
                 'success' => false,
                 'message' => __( 'Nalda API key is not configured.', 'woo-nalda-sync' ),
@@ -110,6 +126,11 @@ class Woo_Nalda_Sync_Order_Sync {
 
         if ( ! $orders_result['success'] ) {
             $this->log( sprintf( 'Failed to fetch orders: %s', $orders_result['message'] ) );
+            woo_nalda_sync_logger()->log_order_import(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                $orders_result['message']
+            );
             return $orders_result;
         }
 
@@ -117,6 +138,12 @@ class Woo_Nalda_Sync_Order_Sync {
 
         if ( empty( $orders ) ) {
             $this->log( 'No new orders found.' );
+            woo_nalda_sync_logger()->log_order_import(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_SUCCESS,
+                __( 'No new orders found', 'woo-nalda-sync' ),
+                array( 'range' => $range )
+            );
             return array(
                 'success'      => true,
                 'message'      => __( 'No new orders found.', 'woo-nalda-sync' ),
@@ -171,6 +198,27 @@ class Woo_Nalda_Sync_Order_Sync {
             $orders_updated,
             $orders_skipped
         ) );
+
+        // Log success.
+        $summary = sprintf(
+            __( 'Imported orders in %ss. Created: %d, Updated: %d, Skipped: %d', 'woo-nalda-sync' ),
+            $duration,
+            $orders_created,
+            $orders_updated,
+            $orders_skipped
+        );
+        woo_nalda_sync_logger()->log_order_import(
+            $trigger,
+            Woo_Nalda_Sync_Logger::STATUS_SUCCESS,
+            $summary,
+            array(
+                'range'          => $range,
+                'orders_created' => $orders_created,
+                'orders_updated' => $orders_updated,
+                'orders_skipped' => $orders_skipped,
+                'duration'       => $duration,
+            )
+        );
 
         return array(
             'success'        => true,

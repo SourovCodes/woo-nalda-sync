@@ -724,6 +724,158 @@
     };
 
     /**
+     * Sync Logs Manager
+     */
+    const SyncLogsManager = {
+        init: function () {
+            this.bindEvents();
+            this.loadLogs();
+        },
+
+        bindEvents: function () {
+            $(document).on('click', '#wns-refresh-logs', this.loadLogs.bind(this));
+            $(document).on('click', '#wns-clear-logs', this.clearLogs.bind(this));
+        },
+
+        loadLogs: function () {
+            const $container = $('#wns-logs-container');
+
+            if (!$container.length) {
+                return;
+            }
+
+            $container.html(
+                '<div class="wns-logs-loading">' +
+                '<span class="spinner is-active" style="float: none;"></span> ' +
+                (wooNaldaSync.strings.loadingLogs || 'Loading logs...') +
+                '</div>'
+            );
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_get_sync_logs',
+                    nonce: wooNaldaSync.nonce,
+                    limit: 20
+                },
+                success: function (response) {
+                    if (response.success) {
+                        SyncLogsManager.renderLogs(response.data.logs);
+                    } else {
+                        $container.html(
+                            '<div class="wns-alert wns-alert-error">' +
+                            (response.data.message || 'Failed to load logs.') +
+                            '</div>'
+                        );
+                    }
+                },
+                error: function () {
+                    $container.html(
+                        '<div class="wns-alert wns-alert-error">' +
+                        'Connection error. Please try again.' +
+                        '</div>'
+                    );
+                }
+            });
+        },
+
+        clearLogs: function () {
+            if (!confirm(wooNaldaSync.strings.confirmClearLogs || 'Are you sure you want to clear all sync logs?')) {
+                return;
+            }
+
+            const $button = $('#wns-clear-logs');
+            setButtonLoading($button, true);
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_clear_sync_logs',
+                    nonce: wooNaldaSync.nonce
+                },
+                success: function (response) {
+                    setButtonLoading($button, false);
+
+                    if (response.success) {
+                        Toast.success(response.data.message || 'Logs cleared successfully.');
+                        SyncLogsManager.loadLogs();
+                    } else {
+                        Toast.error(response.data.message || 'Failed to clear logs.');
+                    }
+                },
+                error: function () {
+                    setButtonLoading($button, false);
+                    Toast.error('Connection error. Please try again.');
+                }
+            });
+        },
+
+        renderLogs: function (logs) {
+            const $container = $('#wns-logs-container');
+
+            if (!logs || logs.length === 0) {
+                $container.html(
+                    '<div class="wns-empty-state" style="text-align: center; padding: 40px 20px; color: #666;">' +
+                    '<span class="dashicons dashicons-list-view" style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 16px;"></span>' +
+                    '<p>' + (wooNaldaSync.strings.noLogs || 'No sync logs yet. Run a sync to see activity here.') + '</p>' +
+                    '</div>'
+                );
+                return;
+            }
+
+            let html = '<table class="wns-logs-table widefat striped">' +
+                '<thead>' +
+                '<tr>' +
+                '<th style="width: 160px;">' + (wooNaldaSync.strings.logTime || 'Time') + '</th>' +
+                '<th style="width: 130px;">' + (wooNaldaSync.strings.logType || 'Type') + '</th>' +
+                '<th style="width: 100px;">' + (wooNaldaSync.strings.logTrigger || 'Trigger') + '</th>' +
+                '<th style="width: 80px;">' + (wooNaldaSync.strings.logStatus || 'Status') + '</th>' +
+                '<th>' + (wooNaldaSync.strings.logSummary || 'Summary') + '</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>';
+
+            logs.forEach(function (log) {
+                const typeClass = log.type === 'product_export' ? 'wns-badge-info' : 'wns-badge-purple';
+                const typeLabel = log.type === 'product_export'
+                    ? (wooNaldaSync.strings.productExport || 'Product Export')
+                    : (wooNaldaSync.strings.orderImport || 'Order Import');
+
+                const triggerClass = log.trigger === 'manual' ? 'wns-badge-secondary' : 'wns-badge-default';
+                const triggerLabel = log.trigger === 'manual'
+                    ? (wooNaldaSync.strings.triggerManual || 'Manual')
+                    : (wooNaldaSync.strings.triggerAutomatic || 'Automatic');
+
+                let statusClass = 'wns-badge-default';
+                if (log.status === 'success') statusClass = 'wns-badge-success';
+                else if (log.status === 'error') statusClass = 'wns-badge-error';
+                else if (log.status === 'warning') statusClass = 'wns-badge-warning';
+
+                const statusLabel = log.status.charAt(0).toUpperCase() + log.status.slice(1);
+
+                html += '<tr>' +
+                    '<td>' + SyncLogsManager.formatDate(log.timestamp) + '</td>' +
+                    '<td><span class="wns-badge ' + typeClass + '">' + typeLabel + '</span></td>' +
+                    '<td><span class="wns-badge ' + triggerClass + '">' + triggerLabel + '</span></td>' +
+                    '<td><span class="wns-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
+                    '<td>' + UploadHistoryManager.escapeHtml(log.summary) + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table>';
+            $container.html(html);
+        },
+
+        formatDate: function (timestamp) {
+            if (!timestamp) return '—';
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    };
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function () {
@@ -732,6 +884,7 @@
         SyncManager.init();
         ToggleSwitches.init();
         UploadHistoryManager.init();
+        SyncLogsManager.init();
 
         // Restore active tab
         SettingsManager.restoreActiveTab();
