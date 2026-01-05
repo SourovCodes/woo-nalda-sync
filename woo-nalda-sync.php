@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce Nalda Sync
  * Plugin URI: https://jonakyds.com/plugins/woo-nalda-sync
  * Description: Sync your WooCommerce store with Nalda for seamless inventory and order management.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Jonakyds
  * Author URI: https://jonakyds.com
  * License: GPL-2.0+
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'WOO_NALDA_SYNC_VERSION', '1.0.0' );
+define( 'WOO_NALDA_SYNC_VERSION', '1.0.1' );
 define( 'WOO_NALDA_SYNC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -95,6 +95,9 @@ final class Woo_Nalda_Sync {
      * Constructor.
      */
     private function __construct() {
+        // Register cron schedules FIRST - must be done before any scheduling.
+        add_filter( 'cron_schedules', array( $this, 'add_cron_schedules' ) );
+        
         $this->includes();
         $this->init_hooks();
     }
@@ -120,11 +123,9 @@ final class Woo_Nalda_Sync {
         add_action( 'init', array( $this, 'init' ), 0 );
         add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
         
-        register_activation_hook( __FILE__, array( $this, 'activate' ) );
-        register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
-
-        // Cron actions.
-        add_filter( 'cron_schedules', array( $this, 'add_cron_schedules' ) );
+        // Use static methods for activation/deactivation.
+        register_activation_hook( __FILE__, array( __CLASS__, 'activate_plugin' ) );
+        register_deactivation_hook( __FILE__, array( __CLASS__, 'deactivate_plugin' ) );
     }
 
     /**
@@ -151,8 +152,11 @@ final class Woo_Nalda_Sync {
             $this->admin = new Woo_Nalda_Sync_Admin( $this->license, $this->product_sync, $this->order_sync );
         }
 
-        // Setup cron schedules.
-        $this->setup_cron_schedules();
+        // Check if we need to setup cron on first run after activation.
+        if ( get_transient( 'woo_nalda_sync_activation' ) ) {
+            delete_transient( 'woo_nalda_sync_activation' );
+            $this->reschedule_cron_events();
+        }
     }
 
     /**
@@ -216,59 +220,58 @@ final class Woo_Nalda_Sync {
     }
 
     /**
-     * Setup cron schedules based on settings.
+     * Reschedule cron events - call this when settings change.
+     * Clears existing schedules and creates new ones starting 2 minutes from now.
      *
-     * @param bool $force Force reschedule even if already scheduled.
+     * @param array|null $settings Optional. Settings array. If null, reads from database.
      */
-    public function setup_cron_schedules( $force = false ) {
-        $settings = $this->get_setting();
+    public function reschedule_cron_events( $settings = null ) {
+        if ( null === $settings ) {
+            $settings = $this->get_setting();
+        }
+
+        // Aggressively clear all existing schedules.
+        $this->clear_all_cron_events();
 
         // Product sync schedule.
-        if ( isset( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
-            $product_schedule = isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly';
-            $this->schedule_event( 'woo_nalda_sync_product_sync', $product_schedule, $force );
-        } else {
-            wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
+        if ( ! empty( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
+            $recurrence = ! empty( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly';
+            $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_sync' );
         }
 
         // Order sync schedule.
-        if ( isset( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
-            $order_schedule = isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly';
-            $this->schedule_event( 'woo_nalda_sync_order_sync', $order_schedule, $force );
-        } else {
-            wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
+        if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
+            $recurrence = ! empty( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly';
+            $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_sync' );
         }
     }
 
     /**
-     * Schedule a cron event with the specified recurrence.
-     *
-     * @param string $hook       Hook name.
-     * @param string $recurrence Recurrence schedule.
-     * @param bool   $force      Force reschedule even if already scheduled.
+     * Clear all plugin cron events.
      */
-    private function schedule_event( $hook, $recurrence, $force = false ) {
-        $next_scheduled = wp_next_scheduled( $hook );
+    private function clear_all_cron_events() {
+        // Clear using both methods for reliability.
+        wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
 
-        // Clear existing schedule if exists and force is true, or recurrence changed.
-        if ( $next_scheduled ) {
-            $current_schedule = wp_get_schedule( $hook );
-            if ( $force || $current_schedule !== $recurrence ) {
-                wp_clear_scheduled_hook( $hook );
-            } else {
-                // Already scheduled with same recurrence, keep it.
-                return;
-            }
+        // Also unschedule by timestamp if still exists.
+        $product_timestamp = wp_next_scheduled( 'woo_nalda_sync_product_sync' );
+        if ( $product_timestamp ) {
+            wp_unschedule_event( $product_timestamp, 'woo_nalda_sync_product_sync' );
         }
 
-        // Schedule new event to start 3 minutes from now.
-        wp_schedule_event( time() + ( 3 * MINUTE_IN_SECONDS ), $recurrence, $hook );
+        $order_timestamp = wp_next_scheduled( 'woo_nalda_sync_order_sync' );
+        if ( $order_timestamp ) {
+            wp_unschedule_event( $order_timestamp, 'woo_nalda_sync_order_sync' );
+        }
     }
 
     /**
-     * Plugin activation.
+     * Plugin activation - static method.
      */
-    public function activate() {
+    public static function activate_plugin() {
         // Set default options.
         $default_settings = array(
             // SFTP Settings
@@ -316,18 +319,18 @@ final class Woo_Nalda_Sync {
             file_put_contents( $htaccess_file, 'deny from all' );
         }
 
-        // Setup cron schedules (first run in 3 minutes).
-        $this->setup_cron_schedules( true );
+        // Set transient to trigger cron setup on next init (after custom schedules are registered).
+        set_transient( 'woo_nalda_sync_activation', 1, 60 );
 
         // Flush rewrite rules.
         flush_rewrite_rules();
     }
 
     /**
-     * Plugin deactivation.
+     * Plugin deactivation - static method.
      */
-    public function deactivate() {
-        // Clear scheduled hooks.
+    public static function deactivate_plugin() {
+        // Clear all scheduled hooks.
         wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_daily_license_check' );
@@ -371,14 +374,13 @@ final class Woo_Nalda_Sync {
     public function update_settings( $settings ) {
         $current_settings = $this->get_setting();
         $updated_settings = array_merge( $current_settings, $settings );
-        $result = update_option( 'woo_nalda_sync_settings', $updated_settings );
+        update_option( 'woo_nalda_sync_settings', $updated_settings );
 
-        // Re-setup cron schedules when settings change (force reschedule to start in 3 minutes).
-        if ( $result ) {
-            $this->setup_cron_schedules( true );
-        }
+        // Always reschedule cron events when settings are saved.
+        // Pass the updated settings directly to avoid cache issues.
+        $this->reschedule_cron_events( $updated_settings );
 
-        return $result;
+        return true;
     }
 
     /**

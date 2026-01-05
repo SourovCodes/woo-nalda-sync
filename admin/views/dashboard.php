@@ -204,7 +204,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <?php if ( $product_sync_status && $next_product_sync ) : ?>
                         <div class="wns-sync-stat">
                             <span class="wns-sync-stat-value">
-                                <?php echo esc_html( human_time_diff( current_time( 'timestamp' ), $next_product_sync ) ); ?>
+                                <?php echo esc_html( human_time_diff( time(), $next_product_sync ) ); ?>
                             </span>
                             <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Export', 'woo-nalda-sync' ); ?></span>
                         </div>
@@ -277,7 +277,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <?php if ( $order_sync_status && $next_order_sync ) : ?>
                         <div class="wns-sync-stat">
                             <span class="wns-sync-stat-value">
-                                <?php echo esc_html( human_time_diff( current_time( 'timestamp' ), $next_order_sync ) ); ?>
+                                <?php echo esc_html( human_time_diff( time(), $next_order_sync ) ); ?>
                             </span>
                             <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Import', 'woo-nalda-sync' ); ?></span>
                         </div>
