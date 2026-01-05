@@ -253,17 +253,25 @@ class Woo_Nalda_Sync_Product_Sync {
 
         // Get filename.
         $filename = $this->get_filename();
-        $upload_dir = wp_upload_dir();
-        $file_path = trailingslashit( $upload_dir['basedir'] ) . 'woo-nalda-sync/' . $filename;
+        
+        // Use WordPress temp directory to avoid permission issues with cron.
+        $temp_dir = get_temp_dir();
+        $file_path = trailingslashit( $temp_dir ) . $filename;
 
-        // Create directory if not exists.
-        wp_mkdir_p( dirname( $file_path ) );
+        // If temp directory is not writable, fallback to uploads directory.
+        if ( ! wp_is_writable( $temp_dir ) ) {
+            $upload_dir = wp_upload_dir();
+            $file_path = trailingslashit( $upload_dir['basedir'] ) . 'woo-nalda-sync/' . $filename;
+            wp_mkdir_p( dirname( $file_path ) );
+        }
+
+        $this->log( sprintf( 'Creating CSV file at: %s', $file_path ) );
 
         // Open file for writing.
         $file = fopen( $file_path, 'w' );
 
         if ( ! $file ) {
-            $this->log( 'Failed to create CSV file.' );
+            $this->log( sprintf( 'Failed to create CSV file at: %s', $file_path ) );
             return array(
                 'success' => false,
                 'message' => __( 'Failed to create CSV file.', 'woo-nalda-sync' ),
