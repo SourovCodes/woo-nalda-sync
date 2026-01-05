@@ -217,14 +217,16 @@ final class Woo_Nalda_Sync {
 
     /**
      * Setup cron schedules based on settings.
+     *
+     * @param bool $force Force reschedule even if already scheduled.
      */
-    public function setup_cron_schedules() {
+    public function setup_cron_schedules( $force = false ) {
         $settings = $this->get_setting();
 
         // Product sync schedule.
         if ( isset( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
             $product_schedule = isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly';
-            $this->schedule_event( 'woo_nalda_sync_product_sync', $product_schedule );
+            $this->schedule_event( 'woo_nalda_sync_product_sync', $product_schedule, $force );
         } else {
             wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
         }
@@ -232,7 +234,7 @@ final class Woo_Nalda_Sync {
         // Order sync schedule.
         if ( isset( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
             $order_schedule = isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly';
-            $this->schedule_event( 'woo_nalda_sync_order_sync', $order_schedule );
+            $this->schedule_event( 'woo_nalda_sync_order_sync', $order_schedule, $force );
         } else {
             wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
         }
@@ -243,22 +245,24 @@ final class Woo_Nalda_Sync {
      *
      * @param string $hook       Hook name.
      * @param string $recurrence Recurrence schedule.
+     * @param bool   $force      Force reschedule even if already scheduled.
      */
-    private function schedule_event( $hook, $recurrence ) {
+    private function schedule_event( $hook, $recurrence, $force = false ) {
         $next_scheduled = wp_next_scheduled( $hook );
 
-        // If already scheduled with same recurrence, do nothing.
+        // Clear existing schedule if exists and force is true, or recurrence changed.
         if ( $next_scheduled ) {
             $current_schedule = wp_get_schedule( $hook );
-            if ( $current_schedule === $recurrence ) {
+            if ( $force || $current_schedule !== $recurrence ) {
+                wp_clear_scheduled_hook( $hook );
+            } else {
+                // Already scheduled with same recurrence, keep it.
                 return;
             }
-            // Clear existing schedule if recurrence changed.
-            wp_clear_scheduled_hook( $hook );
         }
 
-        // Schedule new event.
-        wp_schedule_event( time(), $recurrence, $hook );
+        // Schedule new event to start 3 minutes from now.
+        wp_schedule_event( time() + ( 3 * MINUTE_IN_SECONDS ), $recurrence, $hook );
     }
 
     /**
@@ -311,6 +315,9 @@ final class Woo_Nalda_Sync {
         if ( ! file_exists( $htaccess_file ) ) {
             file_put_contents( $htaccess_file, 'deny from all' );
         }
+
+        // Setup cron schedules (first run in 3 minutes).
+        $this->setup_cron_schedules( true );
 
         // Flush rewrite rules.
         flush_rewrite_rules();
@@ -366,9 +373,9 @@ final class Woo_Nalda_Sync {
         $updated_settings = array_merge( $current_settings, $settings );
         $result = update_option( 'woo_nalda_sync_settings', $updated_settings );
 
-        // Re-setup cron schedules when settings change.
+        // Re-setup cron schedules when settings change (force reschedule to start in 3 minutes).
         if ( $result ) {
-            $this->setup_cron_schedules();
+            $this->setup_cron_schedules( true );
         }
 
         return $result;
