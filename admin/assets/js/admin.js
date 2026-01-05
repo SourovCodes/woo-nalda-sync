@@ -855,12 +855,14 @@
 
                 const statusLabel = log.status.charAt(0).toUpperCase() + log.status.slice(1);
 
+                const summary = log.summary ? String(log.summary).replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+
                 html += '<tr>' +
                     '<td>' + SyncLogsManager.formatDate(log.timestamp) + '</td>' +
                     '<td><span class="wns-badge ' + typeClass + '">' + typeLabel + '</span></td>' +
                     '<td><span class="wns-badge ' + triggerClass + '">' + triggerLabel + '</span></td>' +
                     '<td><span class="wns-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
-                    '<td>' + UploadHistoryManager.escapeHtml(log.summary) + '</td>' +
+                    '<td>' + summary + '</td>' +
                     '</tr>';
             });
 
