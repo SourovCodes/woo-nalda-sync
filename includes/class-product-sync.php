@@ -770,8 +770,8 @@ class Woo_Nalda_Sync_Product_Sync {
         $pattern  = isset( $settings['filename_pattern'] ) ? $settings['filename_pattern'] : 'products_{date}.csv';
 
         $replacements = array(
-            '{date}'      => date( 'Y-m-d' ),
-            '{datetime}'  => date( 'Y-m-d_H-i-s' ),
+            '{date}'      => wp_date( 'Y-m-d' ),
+            '{datetime}'  => wp_date( 'Y-m-d_H-i-s' ),
             '{timestamp}' => time(),
         );
 
