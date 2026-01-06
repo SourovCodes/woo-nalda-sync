@@ -402,9 +402,30 @@ class Woo_Nalda_Sync_Order_Sync {
             $order->set_shipping_postcode( $nalda_order['postalCode'] );
             $order->set_shipping_country( $nalda_order['country'] );
 
-            // Add order items.
+            // Add order items and calculate commission totals from items.
+            $total_commission = 0;
+            $total_refund     = 0;
+            $commission_pct   = 0;
+            $payout_status    = '';
+
             foreach ( $order_items as $item ) {
                 $this->add_order_item( $order, $item );
+
+                // Sum up commission and refund from items.
+                if ( isset( $item['commission'] ) ) {
+                    $total_commission += floatval( $item['commission'] );
+                }
+                if ( isset( $item['refund'] ) ) {
+                    $total_refund += floatval( $item['refund'] );
+                }
+                // Get commission percentage (should be same for all items).
+                if ( isset( $item['commissionPercentage'] ) && $commission_pct === 0 ) {
+                    $commission_pct = floatval( $item['commissionPercentage'] );
+                }
+                // Get payout status from items.
+                if ( isset( $item['payoutStatus'] ) && empty( $payout_status ) ) {
+                    $payout_status = $item['payoutStatus'];
+                }
             }
 
             // Set order date.
@@ -425,11 +446,13 @@ class Woo_Nalda_Sync_Order_Sync {
             $order->set_payment_method_title( 'Nalda' );
             $order->set_date_paid( strtotime( isset( $nalda_order['createdAt'] ) ? $nalda_order['createdAt'] : 'now' ) );
 
-            // Set Nalda metadata.
+            // Set Nalda metadata - use values from items if main order doesn't have them.
             $order->update_meta_data( '_nalda_order_id', $nalda_order['orderId'] );
-            $order->update_meta_data( '_nalda_payout_status', isset( $nalda_order['payoutStatus'] ) ? $nalda_order['payoutStatus'] : '' );
-            $order->update_meta_data( '_nalda_fee', isset( $nalda_order['fee'] ) ? $nalda_order['fee'] : 0 );
-            $order->update_meta_data( '_nalda_commission', isset( $nalda_order['commission'] ) ? $nalda_order['commission'] : 0 );
+            $order->update_meta_data( '_nalda_payout_status', ! empty( $payout_status ) ? $payout_status : ( isset( $nalda_order['payoutStatus'] ) ? $nalda_order['payoutStatus'] : '' ) );
+            $order->update_meta_data( '_nalda_fee', isset( $nalda_order['fee'] ) ? floatval( $nalda_order['fee'] ) : 0 );
+            $order->update_meta_data( '_nalda_commission', $total_commission > 0 ? $total_commission : ( isset( $nalda_order['commission'] ) ? floatval( $nalda_order['commission'] ) : 0 ) );
+            $order->update_meta_data( '_nalda_commission_percentage', $commission_pct > 0 ? $commission_pct : ( isset( $nalda_order['commissionPercentage'] ) ? floatval( $nalda_order['commissionPercentage'] ) : 0 ) );
+            $order->update_meta_data( '_nalda_refund', $total_refund > 0 ? $total_refund : ( isset( $nalda_order['refund'] ) ? floatval( $nalda_order['refund'] ) : 0 ) );
             $order->update_meta_data( '_nalda_imported_at', current_time( 'mysql' ) );
             $order->update_meta_data( '_order_source', 'nalda.com' );
             $order->update_meta_data( '_created_via', 'nalda' );

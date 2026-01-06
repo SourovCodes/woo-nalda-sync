@@ -88,6 +88,9 @@ class Woo_Nalda_Sync_Admin {
 
         // Plugin action links.
         add_filter( 'plugin_action_links_' . WOO_NALDA_SYNC_PLUGIN_BASENAME, array( $this, 'plugin_action_links' ) );
+
+        // Order meta box for Nalda commission (admin only).
+        add_action( 'add_meta_boxes', array( $this, 'add_nalda_order_meta_box' ) );
     }
 
     /**
@@ -641,5 +644,165 @@ class Woo_Nalda_Sync_Admin {
      */
     public function render_logs_page() {
         include WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/views/logs.php';
+    }
+
+    /**
+     * Add meta box for Nalda order info (commission, fees, etc.)
+     * Only shows on orders imported from Nalda.
+     */
+    public function add_nalda_order_meta_box() {
+        $screen = wc_get_container()->get( \Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController::class )->custom_orders_table_usage_is_enabled()
+            ? wc_get_page_screen_id( 'shop-order' )
+            : 'shop_order';
+
+        add_meta_box(
+            'woo_nalda_sync_order_info',
+            __( 'Nalda Marketplace Info', 'woo-nalda-sync' ),
+            array( $this, 'render_nalda_order_meta_box' ),
+            $screen,
+            'side',
+            'high'
+        );
+    }
+
+    /**
+     * Render the Nalda order info meta box.
+     *
+     * @param WP_Post|WC_Order $post_or_order Post object or order object (HPOS).
+     */
+    public function render_nalda_order_meta_box( $post_or_order ) {
+        // Get the order object.
+        if ( $post_or_order instanceof WC_Order ) {
+            $order = $post_or_order;
+        } else {
+            $order = wc_get_order( $post_or_order->ID );
+        }
+
+        if ( ! $order ) {
+            return;
+        }
+
+        // Check if this is a Nalda order.
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+
+        if ( empty( $nalda_order_id ) ) {
+            echo '<p style="color: #666; font-style: italic;">' . esc_html__( 'This order was not imported from Nalda.', 'woo-nalda-sync' ) . '</p>';
+            return;
+        }
+
+        // Get Nalda metadata.
+        $commission            = floatval( $order->get_meta( '_nalda_commission' ) );
+        $commission_percentage = floatval( $order->get_meta( '_nalda_commission_percentage' ) );
+        $fee                   = floatval( $order->get_meta( '_nalda_fee' ) );
+        $refund                = floatval( $order->get_meta( '_nalda_refund' ) );
+        $payout_status         = $order->get_meta( '_nalda_payout_status' );
+        $imported_at           = $order->get_meta( '_nalda_imported_at' );
+
+        // Calculate totals.
+        $order_total = floatval( $order->get_total() );
+        $total_fees  = $commission + $fee;
+        $net_revenue = $order_total - $total_fees + $refund;
+
+        // Get currency.
+        $currency = $order->get_currency();
+
+        ?>
+        <style>
+            .wns-order-meta-box { margin: -6px -12px -12px; }
+            .wns-order-meta-row { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+            .wns-order-meta-row:last-child { border-bottom: none; }
+            .wns-order-meta-label { color: #646970; font-size: 12px; }
+            .wns-order-meta-value { font-weight: 500; text-align: right; }
+            .wns-order-meta-value.negative { color: #d63638; }
+            .wns-order-meta-value.positive { color: #00a32a; }
+            .wns-order-meta-divider { border-top: 2px solid #dcdcde; margin: 0; }
+            .wns-order-meta-total { background: #f6f7f7; }
+            .wns-order-meta-total .wns-order-meta-label { font-weight: 600; color: #1d2327; }
+            .wns-order-meta-total .wns-order-meta-value { font-weight: 600; font-size: 14px; }
+            .wns-order-meta-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 500; }
+            .wns-order-meta-badge.pending { background: #fcf0e3; color: #9a6700; }
+            .wns-order-meta-badge.paid { background: #d4edda; color: #155724; }
+        </style>
+        <div class="wns-order-meta-box">
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Nalda Order ID', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value">#<?php echo esc_html( $nalda_order_id ); ?></span>
+            </div>
+
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Order Total', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value"><?php echo wc_price( $order_total, array( 'currency' => $currency ) ); ?></span>
+            </div>
+
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label">
+                    <?php 
+                    printf( 
+                        /* translators: %s: commission percentage */
+                        esc_html__( 'Commission (%s%%)', 'woo-nalda-sync' ), 
+                        esc_html( number_format( $commission_percentage, 1 ) ) 
+                    ); 
+                    ?>
+                </span>
+                <span class="wns-order-meta-value negative">-<?php echo wc_price( $commission, array( 'currency' => $currency ) ); ?></span>
+            </div>
+
+            <?php if ( $fee > 0 ) : ?>
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Platform Fee', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value negative">-<?php echo wc_price( $fee, array( 'currency' => $currency ) ); ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if ( $refund > 0 ) : ?>
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Refund', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value positive">+<?php echo wc_price( $refund, array( 'currency' => $currency ) ); ?></span>
+            </div>
+            <?php endif; ?>
+
+            <hr class="wns-order-meta-divider">
+
+            <div class="wns-order-meta-row wns-order-meta-total">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Net Revenue', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value positive"><?php echo wc_price( $net_revenue, array( 'currency' => $currency ) ); ?></span>
+            </div>
+
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Payout Status', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value">
+                    <?php
+                    $status_class = 'pending';
+                    $status_label = __( 'Pending', 'woo-nalda-sync' );
+                    
+                    $payout_status_lower = strtolower( $payout_status );
+                    if ( 'paid' === $payout_status_lower || 'paid_out' === $payout_status_lower ) {
+                        $status_class = 'paid';
+                        $status_label = __( 'Paid', 'woo-nalda-sync' );
+                    } elseif ( 'partially_paid_out' === $payout_status_lower ) {
+                        $status_class = 'pending';
+                        $status_label = __( 'Partially Paid', 'woo-nalda-sync' );
+                    } elseif ( 'open' === $payout_status_lower ) {
+                        $status_class = 'pending';
+                        $status_label = __( 'Open', 'woo-nalda-sync' );
+                    } elseif ( 'error' === $payout_status_lower ) {
+                        $status_class = 'pending';
+                        $status_label = __( 'Error', 'woo-nalda-sync' );
+                    } elseif ( ! empty( $payout_status ) ) {
+                        $status_label = ucfirst( str_replace( '_', ' ', $payout_status ) );
+                    }
+                    ?>
+                    <span class="wns-order-meta-badge <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
+                </span>
+            </div>
+
+            <?php if ( $imported_at ) : ?>
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Imported', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value" style="font-size: 11px; color: #646970;"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $imported_at ) ) ); ?></span>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 }
