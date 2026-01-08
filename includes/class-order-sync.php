@@ -463,8 +463,24 @@ class Woo_Nalda_Sync_Order_Sync {
 
             // Set payment method.
             $order->set_payment_method( 'nalda' );
-            $order->set_payment_method_title( 'Nalda' );
-            $order->set_date_paid( strtotime( isset( $nalda_order['createdAt'] ) ? $nalda_order['createdAt'] : 'now' ) );
+            $order->set_payment_method_title( 'Nalda Marketplace' );
+            
+            // Set payment status based on Nalda payout status.
+            // Only mark as paid if Nalda has actually paid us out.
+            $payout_status_lower = strtolower( $payout_status );
+            if ( 'paid_out' === $payout_status_lower ) {
+                // Nalda has paid us - mark order as paid.
+                $order->set_date_paid( time() );
+                $order->add_order_note(
+                    __( 'Payment received from Nalda Marketplace.', 'woo-nalda-sync' ),
+                    false,
+                    true
+                );
+            } else {
+                // Nalda hasn't paid us yet - leave as unpaid.
+                // Customer paid Nalda, but we're waiting for payout.
+                $order->set_date_paid( null );
+            }
 
             // Set Nalda metadata - use values from items if main order doesn't have them.
             $order->update_meta_data( '_nalda_order_id', $nalda_order['orderId'] );
@@ -725,6 +741,29 @@ class Woo_Nalda_Sync_Order_Sync {
                 false,
                 true
             );
+            
+            // Update payment status based on new payout status.
+            $payout_status_lower = strtolower( $new_payout_status );
+            if ( 'paid_out' === $payout_status_lower && ! $order->is_paid() ) {
+                // Nalda has now paid us - mark order as paid.
+                $order->set_date_paid( time() );
+                $order->add_order_note(
+                    __( 'Payment received from Nalda Marketplace.', 'woo-nalda-sync' ),
+                    false,
+                    true
+                );
+                $this->log( sprintf( 'Order #%d marked as paid - Nalda payout received', $order->get_id() ) );
+            } elseif ( 'paid_out' !== $payout_status_lower && $order->is_paid() ) {
+                // Payout status changed from paid to unpaid (rare, but handle it).
+                $order->set_date_paid( null );
+                $order->add_order_note(
+                    __( 'Payment status reverted - Nalda payout status changed.', 'woo-nalda-sync' ),
+                    false,
+                    true
+                );
+                $this->log( sprintf( 'Order #%d marked as unpaid - Nalda payout status changed to %s', $order->get_id(), $new_payout_status ) );
+            }
+            
             $updated = true;
         }
 
