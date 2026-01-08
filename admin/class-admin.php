@@ -697,11 +697,14 @@ class Woo_Nalda_Sync_Admin {
         $refund                = floatval( $order->get_meta( '_nalda_refund' ) );
         $payout_status         = $order->get_meta( '_nalda_payout_status' );
         $imported_at           = $order->get_meta( '_nalda_imported_at' );
+        
+        // Get end customer email for reference.
+        $end_customer_email = $order->get_meta( '_nalda_end_customer_email' );
 
         // Calculate totals.
-        $order_total = floatval( $order->get_total() );
-        $total_fees  = $commission + $fee;
-        $net_revenue = $order_total - $total_fees + $refund;
+        // Note: Order total is already the net amount (after commission deduction).
+        $net_revenue    = floatval( $order->get_total() ); // This is what we receive
+        $customer_total = $net_revenue + $commission; // This is what customer paid to Nalda
 
         // Get currency.
         $currency = $order->get_currency();
@@ -729,9 +732,18 @@ class Woo_Nalda_Sync_Admin {
                 <span class="wns-order-meta-value">#<?php echo esc_html( $nalda_order_id ); ?></span>
             </div>
 
+            <?php if ( $end_customer_email ) : ?>
             <div class="wns-order-meta-row">
-                <span class="wns-order-meta-label"><?php esc_html_e( 'Order Total', 'woo-nalda-sync' ); ?></span>
-                <span class="wns-order-meta-value"><?php echo wc_price( $order_total, array( 'currency' => $currency ) ); ?></span>
+                <span class="wns-order-meta-label"><?php esc_html_e( 'End Customer', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value" style="font-size: 11px;"><?php echo esc_html( $end_customer_email ); ?></span>
+            </div>
+            <?php endif; ?>
+
+            <hr class="wns-order-meta-divider">
+
+            <div class="wns-order-meta-row">
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Customer Paid', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-value"><?php echo wc_price( $customer_total, array( 'currency' => $currency ) ); ?></span>
             </div>
 
             <div class="wns-order-meta-row">
@@ -739,7 +751,7 @@ class Woo_Nalda_Sync_Admin {
                     <?php 
                     printf( 
                         /* translators: %s: commission percentage */
-                        esc_html__( 'Commission (%s%%)', 'woo-nalda-sync' ), 
+                        esc_html__( 'Nalda Commission (%s%%)', 'woo-nalda-sync' ), 
                         esc_html( number_format( $commission_percentage, 1 ) ) 
                     ); 
                     ?>
@@ -747,24 +759,10 @@ class Woo_Nalda_Sync_Admin {
                 <span class="wns-order-meta-value negative">-<?php echo wc_price( $commission, array( 'currency' => $currency ) ); ?></span>
             </div>
 
-            <?php if ( $fee > 0 ) : ?>
-            <div class="wns-order-meta-row">
-                <span class="wns-order-meta-label"><?php esc_html_e( 'Platform Fee', 'woo-nalda-sync' ); ?></span>
-                <span class="wns-order-meta-value negative">-<?php echo wc_price( $fee, array( 'currency' => $currency ) ); ?></span>
-            </div>
-            <?php endif; ?>
-
-            <?php if ( $refund > 0 ) : ?>
-            <div class="wns-order-meta-row">
-                <span class="wns-order-meta-label"><?php esc_html_e( 'Refund', 'woo-nalda-sync' ); ?></span>
-                <span class="wns-order-meta-value positive">+<?php echo wc_price( $refund, array( 'currency' => $currency ) ); ?></span>
-            </div>
-            <?php endif; ?>
-
             <hr class="wns-order-meta-divider">
 
             <div class="wns-order-meta-row wns-order-meta-total">
-                <span class="wns-order-meta-label"><?php esc_html_e( 'Net Revenue', 'woo-nalda-sync' ); ?></span>
+                <span class="wns-order-meta-label"><?php esc_html_e( 'Your Revenue (Order Total)', 'woo-nalda-sync' ); ?></span>
                 <span class="wns-order-meta-value positive"><?php echo wc_price( $net_revenue, array( 'currency' => $currency ) ); ?></span>
             </div>
 
