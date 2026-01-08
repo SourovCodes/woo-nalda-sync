@@ -462,15 +462,13 @@ class Woo_Nalda_Sync_Order_Sync {
             // Calculate totals without recalculating taxes (prices are already VAT-included).
             $order->calculate_totals( false );
 
-            // Set payment method.
-            $order->set_payment_method( 'nalda' );
-            $order->set_payment_method_title( 'Nalda Marketplace' );
-            
-            // Set payment status based on Nalda payout status.
-            // Only mark as paid if Nalda has actually paid us out.
+            // Set payment method and status based on Nalda payout status.
+            // Only set payment method and mark as paid if Nalda has actually paid us out.
             $payout_status_lower = strtolower( $payout_status );
             if ( 'paid_out' === $payout_status_lower ) {
-                // Nalda has paid us - mark order as paid.
+                // Nalda has paid us - set payment method and mark order as paid.
+                $order->set_payment_method( 'nalda' );
+                $order->set_payment_method_title( 'Nalda Marketplace' );
                 $order->set_date_paid( time() );
                 $order->add_order_note(
                     __( 'Payment received from Nalda Marketplace.', 'woo-nalda-sync' ),
@@ -478,7 +476,7 @@ class Woo_Nalda_Sync_Order_Sync {
                     true
                 );
             } else {
-                // Nalda hasn't paid us yet - leave as unpaid.
+                // Nalda hasn't paid us yet - leave as unpaid with no payment method.
                 // Customer paid Nalda, but we're waiting for payout.
                 $order->set_date_paid( null );
             }
@@ -746,7 +744,9 @@ class Woo_Nalda_Sync_Order_Sync {
             // Update payment status based on new payout status.
             $payout_status_lower = strtolower( $new_payout_status );
             if ( 'paid_out' === $payout_status_lower && ! $order->is_paid() ) {
-                // Nalda has now paid us - mark order as paid.
+                // Nalda has now paid us - set payment method and mark order as paid.
+                $order->set_payment_method( 'nalda' );
+                $order->set_payment_method_title( 'Nalda Marketplace' );
                 $order->set_date_paid( time() );
                 $order->add_order_note(
                     __( 'Payment received from Nalda Marketplace.', 'woo-nalda-sync' ),
@@ -756,6 +756,9 @@ class Woo_Nalda_Sync_Order_Sync {
                 $this->log( sprintf( 'Order #%d marked as paid - Nalda payout received', $order->get_id() ) );
             } elseif ( 'paid_out' !== $payout_status_lower && $order->is_paid() ) {
                 // Payout status changed from paid to unpaid (rare, but handle it).
+                // Remove payment method and mark as unpaid.
+                $order->set_payment_method( '' );
+                $order->set_payment_method_title( '' );
                 $order->set_date_paid( null );
                 $order->add_order_note(
                     __( 'Payment status reverted - Nalda payout status changed.', 'woo-nalda-sync' ),
