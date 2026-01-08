@@ -47,6 +47,20 @@ class Woo_Nalda_Sync_Order_Sync {
     private function init_hooks() {
         // Schedule cron events.
         add_action( 'woo_nalda_sync_order_sync', array( $this, 'run_scheduled_sync' ) );
+        
+        // Disable customer-facing emails for Nalda orders.
+        add_filter( 'woocommerce_email_recipient_customer_processing_order', array( $this, 'disable_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_completed_order', array( $this, 'disable_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_invoice', array( $this, 'disable_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_note', array( $this, 'disable_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_on_hold_order', array( $this, 'disable_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_refunded_order', array( $this, 'disable_customer_emails' ), 10, 2 );
+        
+        // Hide Nalda orders from My Account page.
+        add_filter( 'woocommerce_my_account_my_orders_query', array( $this, 'hide_nalda_orders_from_my_account' ) );
+        
+        // Prevent viewing Nalda order details on frontend.
+        add_action( 'woocommerce_view_order', array( $this, 'restrict_nalda_order_view' ), 1 );
     }
 
     /**
@@ -860,6 +874,70 @@ class Woo_Nalda_Sync_Order_Sync {
         );
     }
 
+    /**
+     * Disable customer emails for Nalda orders.
+     *
+     * @param string   $recipient Email recipient.
+     * @param WC_Order $order     Order object.
+     * @return string|false Modified recipient or false to disable email.
+     */
+    public function disable_customer_emails( $recipient, $order ) {
+        if ( ! $order ) {
+            return $recipient;
+        }
+        
+        // Check if this is a Nalda order.
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+        
+        if ( ! empty( $nalda_order_id ) ) {
+            // Disable customer emails for Nalda orders.
+            // Nalda handles all customer communication.
+            return false;
+        }
+        
+        return $recipient;
+    }
+    
+    /**
+     * Hide Nalda orders from My Account page.
+     *
+     * @param array $args Query args.
+     * @return array Modified query args.
+     */
+    public function hide_nalda_orders_from_my_account( $args ) {
+        if ( ! is_admin() ) {
+            $args['meta_query'] = isset( $args['meta_query'] ) ? $args['meta_query'] : array();
+            $args['meta_query'][] = array(
+                'key'     => '_nalda_order_id',
+                'compare' => 'NOT EXISTS',
+            );
+        }
+        
+        return $args;
+    }
+    
+    /**
+     * Restrict viewing Nalda order details on frontend.
+     *
+     * @param int $order_id Order ID.
+     */
+    public function restrict_nalda_order_view( $order_id ) {
+        $order = wc_get_order( $order_id );
+        
+        if ( ! $order ) {
+            return;
+        }
+        
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+        
+        // If this is a Nalda order and user is not admin, show error.
+        if ( ! empty( $nalda_order_id ) && ! current_user_can( 'manage_woocommerce' ) ) {
+            wc_add_notice( __( 'You do not have permission to view this order.', 'woo-nalda-sync' ), 'error' );
+            wp_safe_redirect( wc_get_page_permalink( 'myaccount' ) );
+            exit;
+        }
+    }
+    
     /**
      * Validate Nalda API credentials.
      *
