@@ -804,70 +804,12 @@ class Woo_Nalda_Sync_Order_Sync {
      * @return int Customer ID (0 for guest).
      */
     private function get_or_create_customer( $nalda_order ) {
-        $settings = woo_nalda_sync()->get_setting();
-        
-        // Check if customer creation is enabled.
-        if ( ! isset( $settings['order_create_customers'] ) || 'yes' !== $settings['order_create_customers'] ) {
-            return 0; // Guest checkout.
-        }
-
-        $email      = $nalda_order['email'];
-        $first_name = $nalda_order['firstName'];
-        $last_name  = $nalda_order['lastName'];
-
-        // Check if customer already exists.
-        $user = get_user_by( 'email', $email );
-
-        if ( $user ) {
-            $this->log( sprintf( 'Found existing customer #%d for email %s', $user->ID, $email ) );
-            return $user->ID;
-        }
-
-        // Create new customer.
-        $username = sanitize_user( $email, true );
-        
-        // Ensure username is unique.
-        $username_base = $username;
-        $counter = 1;
-        while ( username_exists( $username ) ) {
-            $username = $username_base . $counter;
-            $counter++;
-        }
-
-        $customer_id = wc_create_new_customer( $email, $username, wp_generate_password() );
-
-        if ( is_wp_error( $customer_id ) ) {
-            $this->log( sprintf( 'Failed to create customer for %s: %s', $email, $customer_id->get_error_message() ) );
-            return 0; // Guest checkout.
-        }
-
-        // Update customer data.
-        wp_update_user( array(
-            'ID'         => $customer_id,
-            'first_name' => $first_name,
-            'last_name'  => $last_name,
-        ) );
-
-        // Set billing address.
-        update_user_meta( $customer_id, 'billing_first_name', $first_name );
-        update_user_meta( $customer_id, 'billing_last_name', $last_name );
-        update_user_meta( $customer_id, 'billing_email', $email );
-        update_user_meta( $customer_id, 'billing_address_1', $nalda_order['street1'] );
-        update_user_meta( $customer_id, 'billing_city', $nalda_order['city'] );
-        update_user_meta( $customer_id, 'billing_postcode', $nalda_order['postalCode'] );
-        update_user_meta( $customer_id, 'billing_country', $nalda_order['country'] );
-
-        // Set shipping address (same as billing).
-        update_user_meta( $customer_id, 'shipping_first_name', $first_name );
-        update_user_meta( $customer_id, 'shipping_last_name', $last_name );
-        update_user_meta( $customer_id, 'shipping_address_1', $nalda_order['street1'] );
-        update_user_meta( $customer_id, 'shipping_city', $nalda_order['city'] );
-        update_user_meta( $customer_id, 'shipping_postcode', $nalda_order['postalCode'] );
-        update_user_meta( $customer_id, 'shipping_country', $nalda_order['country'] );
-
-        $this->log( sprintf( 'Created new customer #%d for email %s', $customer_id, $email ) );
-
-        return $customer_id;
+        // Since Nalda is the legal customer (set in billing address),
+        // we always use guest checkout for these orders.
+        // End customer details are stored in shipping address and metadata.
+        // This prevents end customers from having WooCommerce accounts and seeing orders.
+        $this->log( sprintf( 'Using guest checkout for Nalda order #%d (end customer: %s)', $nalda_order['orderId'], $nalda_order['email'] ) );
+        return 0;
     }
 
     /**
