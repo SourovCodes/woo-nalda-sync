@@ -400,14 +400,15 @@ class Woo_Nalda_Sync_Order_Sync {
             }
 
             // Set billing address to Nalda (our legal customer for tax purposes).
-            $order->set_billing_company( 'Nalda GmbH' );
+            $order->set_billing_company( 'Nalda Marketplace AG' );
             $order->set_billing_first_name( 'Nalda' );
             $order->set_billing_last_name( 'Marketplace' );
             $order->set_billing_email( 'orders@nalda.com' );
-            $order->set_billing_address_1( 'Balanstraße 73' );
-            $order->set_billing_city( 'München' );
-            $order->set_billing_postcode( '81541' );
-            $order->set_billing_country( 'DE' );
+            $order->set_billing_address_1( 'Grabenstrasse 15a' );
+            $order->set_billing_city( 'Baar' );
+            $order->set_billing_postcode( '6340' );
+            $order->set_billing_country( 'CH' );
+            $order->update_meta_data( '_billing_vat_number', 'CHE-353.496.457 MWST' );
 
             // Set shipping address to end customer (for fulfillment).
             $order->set_shipping_first_name( $nalda_order['firstName'] );
