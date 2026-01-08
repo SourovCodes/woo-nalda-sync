@@ -385,22 +385,28 @@ class Woo_Nalda_Sync_Order_Sync {
                 return false;
             }
 
-            // Set billing address.
-            $order->set_billing_first_name( $nalda_order['firstName'] );
-            $order->set_billing_last_name( $nalda_order['lastName'] );
-            $order->set_billing_email( $nalda_order['email'] );
-            $order->set_billing_address_1( $nalda_order['street1'] );
-            $order->set_billing_city( $nalda_order['city'] );
-            $order->set_billing_postcode( $nalda_order['postalCode'] );
-            $order->set_billing_country( $nalda_order['country'] );
+            // Set billing address to Nalda (our legal customer for tax purposes).
+            $order->set_billing_company( 'Nalda GmbH' );
+            $order->set_billing_first_name( 'Nalda' );
+            $order->set_billing_last_name( 'Marketplace' );
+            $order->set_billing_email( 'orders@nalda.com' );
+            $order->set_billing_address_1( 'Balanstraße 73' );
+            $order->set_billing_city( 'München' );
+            $order->set_billing_postcode( '81541' );
+            $order->set_billing_country( 'DE' );
 
-            // Set shipping address (same as billing).
+            // Set shipping address to end customer (for fulfillment).
             $order->set_shipping_first_name( $nalda_order['firstName'] );
             $order->set_shipping_last_name( $nalda_order['lastName'] );
             $order->set_shipping_address_1( $nalda_order['street1'] );
             $order->set_shipping_city( $nalda_order['city'] );
             $order->set_shipping_postcode( $nalda_order['postalCode'] );
             $order->set_shipping_country( $nalda_order['country'] );
+
+            // Store end customer details in metadata for reference.
+            $order->update_meta_data( '_nalda_end_customer_email', $nalda_order['email'] );
+            $order->update_meta_data( '_nalda_end_customer_first_name', $nalda_order['firstName'] );
+            $order->update_meta_data( '_nalda_end_customer_last_name', $nalda_order['lastName'] );
 
             // Add order items and calculate commission totals from items.
             $total_commission = 0;
@@ -496,15 +502,29 @@ class Woo_Nalda_Sync_Order_Sync {
         // Try to find existing product by GTIN.
         $product = $this->find_product_by_gtin( $nalda_item['gtin'] );
 
+        // Calculate net price (what we actually receive after Nalda's commission).
+        $customer_price = floatval( $nalda_item['price'] );
+        $commission     = isset( $nalda_item['commission'] ) ? floatval( $nalda_item['commission'] ) : 0;
+        $quantity       = intval( $nalda_item['quantity'] );
+        
+        // Net price per item = customer price - (commission / quantity).
+        $commission_per_item = $quantity > 0 ? ( $commission / $quantity ) : 0;
+        $net_price_per_item  = $customer_price - $commission_per_item;
+        
+        // Ensure net price is not negative.
+        if ( $net_price_per_item < 0 ) {
+            $net_price_per_item = 0;
+        }
+
         if ( $product ) {
             // Add existing product.
             $item = new WC_Order_Item_Product();
             $item->set_product( $product );
-            $item->set_quantity( $nalda_item['quantity'] );
-            // Prices from Nalda are already VAT-included, use as-is
-            $item->set_subtotal( $nalda_item['price'] * $nalda_item['quantity'] );
-            $item->set_total( $nalda_item['price'] * $nalda_item['quantity'] );
-            // Set taxes to 0 since price is already VAT-included
+            $item->set_quantity( $quantity );
+            // Use net price (after commission) for tax calculations.
+            $item->set_subtotal( $net_price_per_item * $quantity );
+            $item->set_total( $net_price_per_item * $quantity );
+            // Set taxes to 0 since net price is already VAT-included.
             $item->set_subtotal_tax( 0 );
             $item->set_total_tax( 0 );
 
@@ -512,12 +532,12 @@ class Woo_Nalda_Sync_Order_Sync {
             $settings = woo_nalda_sync()->get_setting();
             if ( isset( $settings['order_reduce_stock'] ) && 'yes' === $settings['order_reduce_stock'] ) {
                 if ( $product->managing_stock() ) {
-                    $new_stock = wc_update_product_stock( $product, $nalda_item['quantity'], 'decrease' );
+                    $new_stock = wc_update_product_stock( $product, $quantity, 'decrease' );
                     $this->log( sprintf(
                         'Reduced stock for product #%d (%s) by %d. New stock: %s',
                         $product->get_id(),
                         $product->get_name(),
-                        $nalda_item['quantity'],
+                        $quantity,
                         $new_stock
                     ) );
                     
@@ -526,7 +546,7 @@ class Woo_Nalda_Sync_Order_Sync {
                         sprintf(
                             __( 'Stock reduced for %s (-%d)', 'woo-nalda-sync' ),
                             $product->get_name(),
-                            $nalda_item['quantity']
+                            $quantity
                         ),
                         false,
                         false
@@ -537,17 +557,20 @@ class Woo_Nalda_Sync_Order_Sync {
             // Create custom line item.
             $item = new WC_Order_Item_Product();
             $item->set_name( $nalda_item['title'] );
-            $item->set_quantity( $nalda_item['quantity'] );
-            // Prices from Nalda are already VAT-included, use as-is
-            $item->set_subtotal( $nalda_item['price'] * $nalda_item['quantity'] );
-            $item->set_total( $nalda_item['price'] * $nalda_item['quantity'] );
-            // Set taxes to 0 since price is already VAT-included
+            $item->set_quantity( $quantity );
+            // Use net price (after commission) for tax calculations.
+            $item->set_subtotal( $net_price_per_item * $quantity );
+            $item->set_total( $net_price_per_item * $quantity );
+            // Set taxes to 0 since net price is already VAT-included.
             $item->set_subtotal_tax( 0 );
             $item->set_total_tax( 0 );
         }
 
         // Add Nalda item metadata.
         $item->add_meta_data( '_nalda_gtin', $nalda_item['gtin'], true );
+        $item->add_meta_data( '_nalda_customer_price', $customer_price, true );
+        $item->add_meta_data( '_nalda_net_price', $net_price_per_item, true );
+        $item->add_meta_data( '_nalda_commission_amount', $commission_per_item, true );
         $item->add_meta_data( '_nalda_condition', isset( $nalda_item['condition'] ) ? $nalda_item['condition'] : '', true );
         $item->add_meta_data( '_nalda_delivery_status', isset( $nalda_item['deliveryStatus'] ) ? $nalda_item['deliveryStatus'] : '', true );
         $item->add_meta_data( '_reduced_stock', $product ? 'yes' : 'no', true );
