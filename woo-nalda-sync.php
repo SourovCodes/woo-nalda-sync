@@ -28,6 +28,7 @@ define( 'WOO_NALDA_SYNC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PRODUCT_SLUG', 'woo-nalda-sync' );
 define( 'WOO_NALDA_SYNC_LICENSE_API_URL', 'https://license-manager-jonakyds.vercel.app/api/v2/licenses' );
+define( 'WOO_NALDA_SYNC_UPDATE_API_URL', 'https://license-manager-jonakyds.vercel.app/api/v2/updates' );
 
 /**
  * Declare compatibility with WooCommerce features.
@@ -80,6 +81,13 @@ final class Woo_Nalda_Sync {
     public $order_sync;
 
     /**
+     * Plugin Updater instance.
+     *
+     * @var Woo_Nalda_Sync_Plugin_Updater
+     */
+    public $updater;
+
+    /**
      * Get single instance of the class.
      *
      * @return Woo_Nalda_Sync
@@ -111,6 +119,7 @@ final class Woo_Nalda_Sync {
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-sync.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-order-sync.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-meta.php';
+        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-plugin-updater.php';
         
         if ( is_admin() ) {
             require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'admin/class-admin.php';
@@ -138,6 +147,9 @@ final class Woo_Nalda_Sync {
 
         // Initialize license manager.
         $this->license = new Woo_Nalda_Sync_License_Manager();
+
+        // Initialize plugin updater.
+        $this->updater = new Woo_Nalda_Sync_Plugin_Updater( $this->license );
 
         // Initialize sync classes.
         $this->product_sync = new Woo_Nalda_Sync_Product_Sync( $this->license );
