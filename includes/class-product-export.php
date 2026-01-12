@@ -1118,10 +1118,10 @@ class Woo_Nalda_Sync_Product_Export {
      * @param int    $per_page Number of results per page.
      * @param int    $page     Page number.
      * @param string $status   Optional status filter (pending, processing, processed, failed).
-     * @param string $csv_type Optional CSV type filter ('products' or 'orders'). Default: 'products'.
+     * @param string $csv_type Optional CSV type filter ('products' or 'orders'). Empty for all.
      * @return array Result with uploads data or error message.
      */
-    public function get_upload_history( $per_page = 10, $page = 1, $status = '', $csv_type = 'products' ) {
+    public function get_upload_history( $per_page = 10, $page = 1, $status = '', $csv_type = '' ) {
         $license_key = $this->license_manager->get_license_key();
 
         if ( empty( $license_key ) ) {
@@ -1137,10 +1137,13 @@ class Woo_Nalda_Sync_Product_Export {
         $query_args = array(
             'license_key' => $license_key,
             'domain'      => $this->license_manager->get_domain(),
-            'csv_type'    => $csv_type,
             'page'        => absint( $page ),
             'limit'       => absint( $per_page ),
         );
+
+        if ( ! empty( $csv_type ) ) {
+            $query_args['csv_type'] = sanitize_text_field( $csv_type );
+        }
 
         if ( ! empty( $status ) ) {
             $query_args['status'] = sanitize_text_field( $status );

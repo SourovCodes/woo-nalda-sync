@@ -549,8 +549,9 @@ class Woo_Nalda_Sync_Admin {
         $per_page = isset( $_POST['per_page'] ) ? absint( $_POST['per_page'] ) : 10;
         $page     = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
         $status   = isset( $_POST['status'] ) ? sanitize_text_field( wp_unslash( $_POST['status'] ) ) : '';
+        $csv_type = isset( $_POST['csv_type'] ) ? sanitize_text_field( wp_unslash( $_POST['csv_type'] ) ) : '';
 
-        $result = $this->product_export->get_upload_history( $per_page, $page, $status );
+        $result = $this->product_export->get_upload_history( $per_page, $page, $status, $csv_type );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );
