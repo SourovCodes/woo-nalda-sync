@@ -91,6 +91,9 @@ class Woo_Nalda_Sync_Admin {
         add_action( 'wp_ajax_woo_nalda_sync_check_update', array( $this, 'ajax_check_update' ) );
         add_action( 'wp_ajax_woo_nalda_sync_run_update', array( $this, 'ajax_run_update' ) );
 
+        // Delivery note PDF download handler.
+        add_action( 'wp_ajax_woo_nalda_sync_download_delivery_note', array( $this, 'ajax_download_delivery_note' ) );
+
         // Plugin action links.
         add_filter( 'plugin_action_links_' . WOO_NALDA_SYNC_PLUGIN_BASENAME, array( $this, 'plugin_action_links' ) );
 
@@ -952,6 +955,25 @@ class Woo_Nalda_Sync_Admin {
                 <label class="wns-order-meta-label" for="_nalda_tracking_code"><?php esc_html_e( 'Tracking Code', 'woo-nalda-sync' ); ?></label>
                 <input type="text" name="_nalda_tracking_code" id="_nalda_tracking_code" value="<?php echo esc_attr( $nalda_tracking_code ); ?>" style="width: 100%;" placeholder="<?php esc_attr_e( 'Enter tracking code', 'woo-nalda-sync' ); ?>">
             </div>
+
+            <hr class="wns-order-meta-divider">
+            
+            <div class="wns-order-meta-row" style="padding: 12px;">
+                <?php
+                $delivery_note_url = add_query_arg( array(
+                    'action'   => 'woo_nalda_sync_download_delivery_note',
+                    'order_id' => $order->get_id(),
+                    'nonce'    => wp_create_nonce( 'woo_nalda_sync_delivery_note_' . $order->get_id() ),
+                ), admin_url( 'admin-ajax.php' ) );
+                ?>
+                <a href="<?php echo esc_url( $delivery_note_url ); ?>" 
+                   class="button button-secondary" 
+                   style="width: 100%; text-align: center;"
+                   target="_blank">
+                    <span class="dashicons dashicons-media-document" style="vertical-align: middle; margin-right: 5px;"></span>
+                    <?php esc_html_e( 'Download Delivery Note', 'woo-nalda-sync' ); ?>
+                </a>
+            </div>
         </div>
         <?php
     }
@@ -1126,5 +1148,53 @@ class Woo_Nalda_Sync_Admin {
             'message' => __( 'Plugin updated successfully!', 'woo-nalda-sync' ),
             'reload'  => true,
         ) );
+    }
+
+    /**
+     * AJAX: Download delivery note PDF.
+     */
+    public function ajax_download_delivery_note() {
+        // Get order ID from request.
+        $order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
+
+        if ( ! $order_id ) {
+            wp_die( __( 'Invalid order ID.', 'woo-nalda-sync' ) );
+        }
+
+        // Verify nonce.
+        if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( $_GET['nonce'], 'woo_nalda_sync_delivery_note_' . $order_id ) ) {
+            wp_die( __( 'Security check failed.', 'woo-nalda-sync' ) );
+        }
+
+        // Check permission.
+        if ( ! current_user_can( 'edit_shop_orders' ) ) {
+            wp_die( __( 'You do not have permission to do this.', 'woo-nalda-sync' ) );
+        }
+
+        // Get the order.
+        $order = wc_get_order( $order_id );
+
+        if ( ! $order ) {
+            wp_die( __( 'Order not found.', 'woo-nalda-sync' ) );
+        }
+
+        // Check if this is a Nalda order.
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+
+        if ( empty( $nalda_order_id ) ) {
+            wp_die( __( 'This is not a Nalda order.', 'woo-nalda-sync' ) );
+        }
+
+        // Load the PDF generator class if not already loaded.
+        if ( ! class_exists( 'Woo_Nalda_Sync_Delivery_Note_PDF' ) ) {
+            require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-delivery-note-pdf.php';
+        }
+
+        // Generate and output PDF.
+        $pdf_generator = new Woo_Nalda_Sync_Delivery_Note_PDF( $order );
+        $pdf_generator->generate();
+
+        // The generate() method exits, so this won't be reached.
+        exit;
     }
 }
