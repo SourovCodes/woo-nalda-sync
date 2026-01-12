@@ -201,12 +201,12 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
             }
             
             $items_html .= '<tr>
-                <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">' . $row_num . '</td>
-                <td style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">' . esc_html( $item->get_name() ) . '</td>
-                <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">' . esc_html( $measure_unit ) . '</td>
-                <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">' . $quantity . '</td>
-                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; font-size: 11px;">' . wc_price( $unit_price, array( 'currency' => $order->get_currency() ) ) . '</td>
-                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; font-size: 11px;">' . wc_price( $total, array( 'currency' => $order->get_currency() ) ) . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . $row_num . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">' . esc_html( $item->get_name() ) . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . esc_html( $measure_unit ) . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . $quantity . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price( $unit_price, array( 'currency' => $order->get_currency() ) ) . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price( $total, array( 'currency' => $order->get_currency() ) ) . '</td>
             </tr>';
             
             $row_num++;
@@ -253,14 +253,14 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
         $html = $styles . '
         <div class="delivery-note">
             <!-- Header -->
-            <table style="width: 100%; margin-bottom: 20px;">
+            <table style="width: 100%; margin-bottom: 30px;">
                 <tr>
                     <td style="width: 50%; vertical-align: top;">
                         ' . ( $logo_html ?: '<strong style="font-size: 18px;">' . esc_html( $store_name ) . '</strong>' ) . '
                     </td>
                     <td style="width: 50%; text-align: right; vertical-align: top;">
-                        <h1 style="margin: 0; font-size: 22px; color: #333;">' . esc_html__( 'Delivery Note', 'woo-nalda-sync' ) . '</h1>
-                        <p style="margin: 4px 0 0; color: #666; font-size: 11px;">
+                        <h1 style="margin: 0; font-size: 24px; color: #333;">' . esc_html__( 'Delivery Note', 'woo-nalda-sync' ) . '</h1>
+                        <p style="margin: 5px 0 0; color: #666;">
                             ' . esc_html__( 'Order', 'woo-nalda-sync' ) . ' #' . esc_html( $order->get_order_number() ) . '<br>
                             ' . esc_html__( 'Date', 'woo-nalda-sync' ) . ': ' . esc_html( $order->get_date_created()->date_i18n( get_option( 'date_format' ) ) ) . '
                             ' . ( $nalda_order_id ? '<br><span style="color: #e67e22;">Nalda #' . esc_html( $nalda_order_id ) . '</span>' : '' ) . '
@@ -270,36 +270,36 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
             </table>
             
             <!-- Addresses -->
-            <table style="width: 100%; margin-bottom: 20px;">
+            <table style="width: 100%; margin-bottom: 30px;">
                 <tr>
-                    <td style="width: 48%; vertical-align: top; padding-right: 15px;">
-                        <h3 style="margin: 0 0 8px; font-size: 13px; color: #666; border-bottom: 2px solid #333; padding-bottom: 4px;">' . esc_html__( 'From (Seller)', 'woo-nalda-sync' ) . '</h3>
+                    <td style="width: 48%; vertical-align: top; padding-right: 20px;">
+                        <h3 style="margin: 0 0 10px; font-size: 14px; color: #666; border-bottom: 2px solid #333; padding-bottom: 5px;">' . esc_html__( 'From (Seller)', 'woo-nalda-sync' ) . '</h3>
                         <p style="margin: 0;">
                             <strong>' . esc_html( $store_name ) . '</strong><br>
                             ' . $seller_address . '
-                            ' . ( $nalda_order_id ? '<br><span style="color: #e67e22; font-weight: bold; font-size: 11px;">' . esc_html__( 'via Nalda', 'woo-nalda-sync' ) . '</span>' : '' ) . '
                         </p>
                     </td>
                     <td style="width: 48%; vertical-align: top;">
-                        <h3 style="margin: 0 0 8px; font-size: 13px; color: #666; border-bottom: 2px solid #333; padding-bottom: 4px;">' . esc_html__( 'To (Buyer)', 'woo-nalda-sync' ) . '</h3>
+                        <h3 style="margin: 0 0 10px; font-size: 14px; color: #666; border-bottom: 2px solid #333; padding-bottom: 5px;">' . esc_html__( 'To (Buyer)', 'woo-nalda-sync' ) . '</h3>
                         <p style="margin: 0;">
                             <strong>' . esc_html( $buyer_name ) . '</strong><br>
                             ' . $buyer_address . '
+                            ' . ( $nalda_order_id ? '<br><span style="color: #e67e22; font-weight: bold; font-size: 11px;">' . esc_html__( 'via Nalda', 'woo-nalda-sync' ) . '</span>' : '' ) . '
                         </p>
                     </td>
                 </tr>
             </table>
             
             <!-- Products Table -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                 <thead>
                     <tr>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 8px 6px; text-align: center; width: 35px; font-size: 11px;">' . esc_html__( 'No', 'woo-nalda-sync' ) . '</th>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 8px 6px; text-align: left; font-size: 11px;">' . esc_html__( 'Description', 'woo-nalda-sync' ) . '</th>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 8px 6px; text-align: center; width: 70px; font-size: 11px;">' . esc_html__( 'Measure unit', 'woo-nalda-sync' ) . '</th>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 8px 6px; text-align: center; width: 50px; font-size: 11px;">' . esc_html__( 'Quantity', 'woo-nalda-sync' ) . '</th>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 8px 6px; text-align: right; width: 80px; font-size: 11px;">' . esc_html__( 'Unit price', 'woo-nalda-sync' ) . '</th>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 8px 6px; text-align: right; width: 80px; font-size: 11px;">' . esc_html__( 'Total', 'woo-nalda-sync' ) . '</th>
+                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: center; width: 40px;">' . esc_html__( 'No', 'woo-nalda-sync' ) . '</th>
+                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: left;">' . esc_html__( 'Description', 'woo-nalda-sync' ) . '</th>
+                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: center; width: 80px;">' . esc_html__( 'Measure unit', 'woo-nalda-sync' ) . '</th>
+                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: center; width: 60px;">' . esc_html__( 'Quantity', 'woo-nalda-sync' ) . '</th>
+                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: right; width: 90px;">' . esc_html__( 'Unit price', 'woo-nalda-sync' ) . '</th>
+                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: right; width: 90px;">' . esc_html__( 'Total', 'woo-nalda-sync' ) . '</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -308,49 +308,49 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
             </table>
             
             <!-- Grand Total -->
-            <table style="margin-left: auto; margin-bottom: 20px;">
+            <table style="margin-left: auto; margin-bottom: 30px;">
                 <tr>
-                    <td style="padding: 4px 15px; font-weight: bold; text-align: right;">' . esc_html__( 'Grand Total', 'woo-nalda-sync' ) . ':</td>
-                    <td style="padding: 4px 8px; font-weight: bold; font-size: 14px; text-align: right;">' . wc_price( $grand_total, array( 'currency' => $currency ) ) . '</td>
+                    <td style="padding: 5px 20px; font-weight: bold; text-align: right;">' . esc_html__( 'Grand Total', 'woo-nalda-sync' ) . ':</td>
+                    <td style="padding: 5px 10px; font-weight: bold; font-size: 16px; text-align: right;">' . wc_price( $grand_total, array( 'currency' => $currency ) ) . '</td>
                 </tr>
             </table>
             
             <!-- Delivery Information -->
-            <table style="width: 100%; margin-bottom: 20px; border: 1px solid #ddd;">
+            <table style="width: 100%; margin-bottom: 30px; border: 1px solid #ddd;">
                 <tr>
-                    <td style="padding: 8px; width: 130px; background: #f5f5f5; font-weight: bold; font-size: 11px;">' . esc_html__( 'Delivery type', 'woo-nalda-sync' ) . ':</td>
-                    <td style="padding: 8px; font-size: 11px;">
-                        <span style="display: inline-block; width: 12px; height: 12px; border: 1px solid #333; margin-right: 4px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'delivery service', 'woo-nalda-sync' ) . '
-                        &#160;&#160;
-                        <span style="display: inline-block; width: 12px; height: 12px; border: 1px solid #333; margin-right: 4px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'post', 'woo-nalda-sync' ) . '
-                        &#160;&#160;
-                        <span style="display: inline-block; width: 12px; height: 12px; border: 1px solid #333; margin-right: 4px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'self-collection', 'woo-nalda-sync' ) . '
+                    <td style="padding: 10px; width: 150px; background: #f5f5f5; font-weight: bold;">' . esc_html__( 'Delivery type', 'woo-nalda-sync' ) . ':</td>
+                    <td style="padding: 10px;">
+                        <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'delivery service', 'woo-nalda-sync' ) . '
+                        &#160;&#160;&#160;
+                        <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'post', 'woo-nalda-sync' ) . '
+                        &#160;&#160;&#160;
+                        <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'self-collection', 'woo-nalda-sync' ) . '
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px; background: #f5f5f5; font-weight: bold; border-top: 1px solid #ddd; font-size: 11px;">' . esc_html__( 'Number of packages', 'woo-nalda-sync' ) . ':</td>
-                    <td style="padding: 8px; border-top: 1px solid #ddd;">&#160;</td>
+                    <td style="padding: 10px; background: #f5f5f5; font-weight: bold; border-top: 1px solid #ddd;">' . esc_html__( 'Number of packages', 'woo-nalda-sync' ) . ':</td>
+                    <td style="padding: 10px; border-top: 1px solid #ddd;">&#160;</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px; background: #f5f5f5; font-weight: bold; border-top: 1px solid #ddd; font-size: 11px;">' . esc_html__( 'Comments', 'woo-nalda-sync' ) . ':</td>
-                    <td style="padding: 8px; border-top: 1px solid #ddd; height: 40px;">&#160;</td>
+                    <td style="padding: 10px; background: #f5f5f5; font-weight: bold; border-top: 1px solid #ddd;">' . esc_html__( 'Comments', 'woo-nalda-sync' ) . ':</td>
+                    <td style="padding: 10px; border-top: 1px solid #ddd; height: 50px;">&#160;</td>
                 </tr>
             </table>
             
             <!-- Signature Section -->
-            <table style="width: 100%; margin-top: 30px;">
+            <table style="width: 100%; margin-top: 40px;">
                 <tr>
                     <td style="width: 50%;">
-                        <p style="margin: 0 0 4px; font-weight: bold; font-size: 11px;">' . esc_html__( 'Received in good condition', 'woo-nalda-sync' ) . ':</p>
-                        <div style="border-bottom: 1px solid #333; width: 220px; height: 35px;"></div>
-                        <p style="margin: 4px 0 0; font-size: 9px; color: #666;">' . esc_html__( 'date, signature', 'woo-nalda-sync' ) . '</p>
+                        <p style="margin: 0 0 5px; font-weight: bold;">' . esc_html__( 'Received in good condition', 'woo-nalda-sync' ) . ':</p>
+                        <div style="border-bottom: 1px solid #333; width: 250px; height: 40px;"></div>
+                        <p style="margin: 5px 0 0; font-size: 10px; color: #666;">' . esc_html__( 'date, signature', 'woo-nalda-sync' ) . '</p>
                     </td>
                     <td style="width: 50%;">&#160;</td>
                 </tr>
             </table>
             
             <!-- Thank You -->
-            <p style="text-align: center; margin-top: 30px; font-style: italic; color: #666; font-size: 11px;">
+            <p style="text-align: center; margin-top: 40px; font-style: italic; color: #666;">
                 ' . esc_html__( 'Thank you for doing business with us!', 'woo-nalda-sync' ) . '
             </p>
         </div>';
