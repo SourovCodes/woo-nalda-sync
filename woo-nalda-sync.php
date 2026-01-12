@@ -205,6 +205,13 @@ final class Woo_Nalda_Sync {
             }
         }
 
+        // Check order status export schedule.
+        if ( ! empty( $settings['order_status_export_enabled'] ) && 'yes' === $settings['order_status_export_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_status_export' ) ) {
+                $needs_reschedule = true;
+            }
+        }
+
         // Reschedule if needed.
         if ( $needs_reschedule ) {
             $this->reschedule_cron_events( $settings );
@@ -298,6 +305,13 @@ final class Woo_Nalda_Sync {
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
             wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_sync' );
         }
+
+        // Order status export schedule.
+        if ( ! empty( $settings['order_status_export_enabled'] ) && 'yes' === $settings['order_status_export_enabled'] ) {
+            $recurrence = ! empty( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly';
+            $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_status_export' );
+        }
     }
 
     /**
@@ -307,6 +321,7 @@ final class Woo_Nalda_Sync {
         // Clear using both methods for reliability.
         wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_order_status_export' );
 
         // Also unschedule by timestamp if still exists.
         $product_timestamp = wp_next_scheduled( 'woo_nalda_sync_product_sync' );
@@ -317,6 +332,11 @@ final class Woo_Nalda_Sync {
         $order_timestamp = wp_next_scheduled( 'woo_nalda_sync_order_sync' );
         if ( $order_timestamp ) {
             wp_unschedule_event( $order_timestamp, 'woo_nalda_sync_order_sync' );
+        }
+
+        $order_status_export_timestamp = wp_next_scheduled( 'woo_nalda_sync_order_status_export' );
+        if ( $order_status_export_timestamp ) {
+            wp_unschedule_event( $order_status_export_timestamp, 'woo_nalda_sync_order_status_export' );
         }
     }
 
@@ -347,6 +367,10 @@ final class Woo_Nalda_Sync {
             // Order Sync Settings
             'order_sync_enabled'     => 'no',
             'order_sync_schedule'    => 'hourly',
+            
+            // Order Status Export Settings
+            'order_status_export_enabled'  => 'no',
+            'order_status_export_schedule' => 'hourly',
             
             // Nalda API Settings
             'nalda_api_key'          => '',
@@ -385,6 +409,7 @@ final class Woo_Nalda_Sync {
         // Clear all scheduled hooks.
         wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_order_status_export' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_daily_license_check' );
         
         // Flush rewrite rules.
@@ -482,8 +507,9 @@ final class Woo_Nalda_Sync {
      */
     public function get_next_sync_times() {
         return array(
-            'product_sync' => wp_next_scheduled( 'woo_nalda_sync_product_sync' ),
-            'order_sync'   => wp_next_scheduled( 'woo_nalda_sync_order_sync' ),
+            'product_sync'        => wp_next_scheduled( 'woo_nalda_sync_product_sync' ),
+            'order_sync'          => wp_next_scheduled( 'woo_nalda_sync_order_sync' ),
+            'order_status_export' => wp_next_scheduled( 'woo_nalda_sync_order_status_export' ),
         );
     }
 }

@@ -367,6 +367,9 @@
 
             // Run order sync
             $(document).on('click', '#wns-run-order-sync', this.handleOrderSync.bind(this));
+
+            // Run order status export
+            $(document).on('click', '#wns-run-order-status-export', this.handleOrderStatusExport.bind(this));
         },
 
         handleProductSync: function (e) {
@@ -416,6 +419,39 @@
                     action: 'woo_nalda_sync_run_order_sync',
                     nonce: wooNaldaSync.nonce
                     // Range will be taken from plugin settings
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Toast.success(response.data.message);
+                        // Reload page to update stats
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        Toast.error(response.data.message);
+                        setButtonLoading($button, false);
+                    }
+                },
+                error: function () {
+                    Toast.error(wooNaldaSync.strings.error);
+                    setButtonLoading($button, false);
+                }
+            });
+        },
+
+        handleOrderStatusExport: function (e) {
+            e.preventDefault();
+
+            const $button = $(e.currentTarget);
+
+            setButtonLoading($button, true, wooNaldaSync.strings.exportingOrderStatus || wooNaldaSync.strings.syncing);
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_run_order_status_export',
+                    nonce: wooNaldaSync.nonce
                 },
                 success: function (response) {
                     if (response.success) {

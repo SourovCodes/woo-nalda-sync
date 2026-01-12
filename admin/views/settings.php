@@ -471,6 +471,51 @@ $update_info = $updater ? $updater->get_update_info() : false;
             </div>
         </div>
 
+        <!-- Order Status Export Settings -->
+        <div class="wns-card">
+            <div class="wns-card-header">
+                <h2>
+                    <span class="dashicons dashicons-update-alt"></span>
+                    <?php esc_html_e( 'Order Status Export Settings', 'woo-nalda-sync' ); ?>
+                </h2>
+            </div>
+            <div class="wns-card-body">
+                <p class="wns-section-description"><?php esc_html_e( 'Configure how order status updates are exported to Nalda Marketplace via CSV upload.', 'woo-nalda-sync' ); ?></p>
+                
+                <div class="wns-settings-section">
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Order Status Export', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Enable automatic order status export to Nalda Marketplace.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <label class="wns-toggle">
+                                <input type="checkbox" name="order_status_export_enabled" value="yes" <?php checked( isset( $settings['order_status_export_enabled'] ) ? $settings['order_status_export_enabled'] : 'no', 'yes' ); ?>>
+                                <span class="wns-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Export Schedule', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'How often should the order status export run automatically.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <select name="order_status_export_schedule" class="wns-form-select">
+                                <option value="every_15_minutes" <?php selected( isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly', 'every_15_minutes' ); ?>><?php esc_html_e( 'Every 15 minutes', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_30_minutes" <?php selected( isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly', 'every_30_minutes' ); ?>><?php esc_html_e( 'Every 30 minutes', 'woo-nalda-sync' ); ?></option>
+                                <option value="hourly" <?php selected( isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly', 'hourly' ); ?>><?php esc_html_e( 'Hourly', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_6_hours" <?php selected( isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly', 'every_6_hours' ); ?>><?php esc_html_e( 'Every 6 hours', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_12_hours" <?php selected( isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly', 'every_12_hours' ); ?>><?php esc_html_e( 'Every 12 hours', 'woo-nalda-sync' ); ?></option>
+                                <option value="daily" <?php selected( isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly', 'daily' ); ?>><?php esc_html_e( 'Daily', 'woo-nalda-sync' ); ?></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Nalda API Settings -->
         <div class="wns-card">
             <div class="wns-card-header">

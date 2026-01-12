@@ -30,8 +30,9 @@ class Woo_Nalda_Sync_Logger {
     /**
      * Sync type constants.
      */
-    const TYPE_PRODUCT_EXPORT = 'product_export';
-    const TYPE_ORDER_IMPORT   = 'order_import';
+    const TYPE_PRODUCT_EXPORT       = 'product_export';
+    const TYPE_ORDER_IMPORT         = 'order_import';
+    const TYPE_ORDER_STATUS_EXPORT  = 'order_status_export';
 
     /**
      * Trigger type constants.
@@ -133,6 +134,19 @@ class Woo_Nalda_Sync_Logger {
     }
 
     /**
+     * Log an order status export run.
+     *
+     * @param string $trigger Trigger type (manual or automatic).
+     * @param string $status  Status (success, error, warning).
+     * @param string $summary Short summary of the run.
+     * @param array  $details Optional. Additional details.
+     * @return bool True on success, false on failure.
+     */
+    public function log_order_status_export( $trigger, $status, $summary, $details = array() ) {
+        return $this->log( self::TYPE_ORDER_STATUS_EXPORT, $trigger, $status, $summary, $details );
+    }
+
+    /**
      * Get all logs.
      *
      * @return array Array of log entries.
@@ -182,8 +196,9 @@ class Woo_Nalda_Sync_Logger {
      */
     public static function get_type_label( $type ) {
         $labels = array(
-            self::TYPE_PRODUCT_EXPORT => __( 'Product Export', 'woo-nalda-sync' ),
-            self::TYPE_ORDER_IMPORT   => __( 'Order Import', 'woo-nalda-sync' ),
+            self::TYPE_PRODUCT_EXPORT      => __( 'Product Export', 'woo-nalda-sync' ),
+            self::TYPE_ORDER_IMPORT        => __( 'Order Import', 'woo-nalda-sync' ),
+            self::TYPE_ORDER_STATUS_EXPORT => __( 'Order Status Export', 'woo-nalda-sync' ),
         );
         return isset( $labels[ $type ] ) ? $labels[ $type ] : $type;
     }

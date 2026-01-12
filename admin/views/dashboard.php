@@ -310,6 +310,90 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
         </div>
     </div>
 
+    <!-- Order Status Export Panel -->
+    <?php
+    // Get order status export stats and settings.
+    $order_status_export_stats    = woo_nalda_sync()->order_sync->get_order_status_export_status();
+    $last_order_status_export     = isset( $order_status_export_stats['last_sync'] ) ? $order_status_export_stats['last_sync'] : null;
+    $orders_status_exported       = isset( $order_status_export_stats['orders_exported'] ) ? $order_status_export_stats['orders_exported'] : 0;
+    $order_status_export_enabled  = isset( $settings['order_status_export_enabled'] ) && 'yes' === $settings['order_status_export_enabled'];
+    $next_order_status_export     = isset( $next_sync_times['order_status_export'] ) && $next_sync_times['order_status_export'] ? $next_sync_times['order_status_export'] : null;
+    ?>
+    <div class="wns-card" style="margin-bottom: 24px;">
+        <div class="wns-card-header">
+            <h2>
+                <span class="dashicons dashicons-update-alt"></span>
+                <?php esc_html_e( 'Order Status Export', 'woo-nalda-sync' ); ?>
+            </h2>
+            <div class="wns-sync-toggle">
+                <?php if ( $order_status_export_enabled ) : ?>
+                    <span class="wns-badge wns-badge-success wns-badge-sm">
+                        <span class="dashicons dashicons-controls-repeat"></span>
+                        <?php esc_html_e( 'Auto', 'woo-nalda-sync' ); ?>
+                    </span>
+                <?php else : ?>
+                    <span class="wns-badge wns-badge-neutral wns-badge-sm">
+                        <?php esc_html_e( 'Manual', 'woo-nalda-sync' ); ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="wns-card-body">
+            <p class="wns-card-description" style="margin-bottom: 16px; color: #666;">
+                <?php esc_html_e( 'Export order status updates (delivery status, tracking codes) to Nalda for imported orders.', 'woo-nalda-sync' ); ?>
+            </p>
+            <div class="wns-sync-stats">
+                <div class="wns-sync-stat">
+                    <span class="wns-sync-stat-value"><?php echo esc_html( number_format_i18n( $orders_status_exported ) ); ?></span>
+                    <span class="wns-sync-stat-label"><?php esc_html_e( 'Statuses Exported', 'woo-nalda-sync' ); ?></span>
+                </div>
+                <div class="wns-sync-stat">
+                    <span class="wns-sync-stat-value">
+                        <?php
+                        if ( $last_order_status_export ) {
+                            echo esc_html( human_time_diff( strtotime( $last_order_status_export ), current_time( 'timestamp' ) ) );
+                        } else {
+                            echo '—';
+                        }
+                        ?>
+                    </span>
+                    <span class="wns-sync-stat-label"><?php esc_html_e( 'Last Export', 'woo-nalda-sync' ); ?></span>
+                </div>
+                <?php if ( $order_status_export_enabled && $next_order_status_export ) : ?>
+                    <div class="wns-sync-stat">
+                        <span class="wns-sync-stat-value">
+                            <?php echo esc_html( human_time_diff( time(), $next_order_status_export ) ); ?>
+                        </span>
+                        <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Export', 'woo-nalda-sync' ); ?></span>
+                    </div>
+                <?php endif; ?>
+            </div>
+            
+            <div class="wns-sync-actions">
+                <?php if ( $is_licensed && $sftp_configured ) : ?>
+                    <button type="button" class="wns-btn wns-btn-secondary wns-sync-btn" id="wns-run-order-status-export">
+                        <span class="dashicons dashicons-update-alt"></span>
+                        <?php esc_html_e( 'Export Order Statuses', 'woo-nalda-sync' ); ?>
+                    </button>
+                <?php else : ?>
+                    <button type="button" class="wns-btn wns-btn-secondary" disabled>
+                        <span class="dashicons dashicons-update-alt"></span>
+                        <?php esc_html_e( 'Export Order Statuses', 'woo-nalda-sync' ); ?>
+                    </button>
+                    <p class="wns-sync-disabled-note">
+                        <?php
+                        if ( ! $is_licensed ) {
+                            esc_html_e( 'Activate your license to export order statuses.', 'woo-nalda-sync' );
+                        } else {
+                            esc_html_e( 'Configure SFTP settings first.', 'woo-nalda-sync' );
+                        }
+                        ?>
+                    </p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
     <!-- CSV Upload History -->
     <?php if ( $is_licensed && $sftp_configured ) : ?>
     <div class="wns-card">

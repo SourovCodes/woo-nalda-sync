@@ -47,6 +47,7 @@ class Woo_Nalda_Sync_Order_Sync {
     private function init_hooks() {
         // Schedule cron events.
         add_action( 'woo_nalda_sync_order_sync', array( $this, 'run_scheduled_sync' ) );
+        add_action( 'woo_nalda_sync_order_status_export', array( $this, 'run_scheduled_order_status_export' ) );
         
         // Disable customer-facing emails for Nalda orders.
         add_filter( 'woocommerce_email_recipient_customer_processing_order', array( $this, 'disable_customer_emails' ), 10, 2 );
@@ -94,6 +95,59 @@ class Woo_Nalda_Sync_Order_Sync {
         // Ensure the cron event is still scheduled after sync completes.
         // This prevents the schedule from being lost if there was an issue.
         $this->ensure_cron_scheduled();
+    }
+
+    /**
+     * Run scheduled order status export.
+     */
+    public function run_scheduled_order_status_export() {
+        $settings = woo_nalda_sync()->get_setting();
+
+        // Check if order status export is enabled.
+        if ( isset( $settings['order_status_export_enabled'] ) && 'yes' !== $settings['order_status_export_enabled'] ) {
+            $this->log( 'Order status export is disabled. Skipping scheduled export.' );
+            return;
+        }
+
+        // Check license.
+        if ( ! $this->license_manager->is_valid() ) {
+            $this->log( 'License is not valid. Skipping scheduled order status export.' );
+            woo_nalda_sync_logger()->log_order_status_export(
+                Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'License is not valid', 'woo-nalda-sync' )
+            );
+            return;
+        }
+
+        $this->run_order_status_export( Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC );
+
+        // Ensure the cron event is still scheduled after export completes.
+        $this->ensure_order_status_export_cron_scheduled();
+    }
+
+    /**
+     * Ensure order status export cron event is scheduled.
+     * This is a safety measure to prevent lost schedules.
+     */
+    private function ensure_order_status_export_cron_scheduled() {
+        $settings = woo_nalda_sync()->get_setting();
+
+        // Only reschedule if order status export is enabled.
+        if ( empty( $settings['order_status_export_enabled'] ) || 'yes' !== $settings['order_status_export_enabled'] ) {
+            return;
+        }
+
+        // Check if cron is already scheduled.
+        $next_scheduled = wp_next_scheduled( 'woo_nalda_sync_order_status_export' );
+
+        if ( ! $next_scheduled ) {
+            // Cron is not scheduled, reschedule it.
+            $recurrence = ! empty( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly';
+            $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_status_export' );
+            $this->log( 'Order status export cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
+        }
     }
 
     /**
@@ -1056,6 +1110,474 @@ class Woo_Nalda_Sync_Order_Sync {
         return array(
             'success' => false,
             'message' => $error_message,
+        );
+    }
+
+    /**
+     * CSV columns for order status export.
+     *
+     * @var array
+     */
+    private $order_status_csv_columns = array(
+        'orderId',
+        'gtin',
+        'state',
+        'expectedDeliveryDate',
+        'trackingCode',
+    );
+
+    /**
+     * Map WooCommerce order status to Nalda state.
+     *
+     * @param string $wc_status WooCommerce order status.
+     * @param string $delivery_status Item delivery status from Nalda.
+     * @return string Nalda state.
+     */
+    private function map_order_status_to_nalda_state( $wc_status, $delivery_status = '' ) {
+        // If we have a Nalda delivery status, prefer it.
+        if ( ! empty( $delivery_status ) ) {
+            $valid_states = array( 'DELIVERED', 'IN_DELIVERY', 'READY_TO_COLLECT', 'CANCELLED', 'RETURNED' );
+            if ( in_array( strtoupper( $delivery_status ), $valid_states, true ) ) {
+                return strtoupper( $delivery_status );
+            }
+        }
+
+        // Map WooCommerce status to Nalda state.
+        $status_map = array(
+            'completed'  => 'DELIVERED',
+            'processing' => 'IN_DELIVERY',
+            'on-hold'    => 'READY_TO_COLLECT',
+            'cancelled'  => 'CANCELLED',
+            'refunded'   => 'RETURNED',
+            'failed'     => 'CANCELLED',
+        );
+
+        return isset( $status_map[ $wc_status ] ) ? $status_map[ $wc_status ] : 'IN_DELIVERY';
+    }
+
+    /**
+     * Run order status export sync.
+     *
+     * Generates a CSV file with order status updates and uploads it to Nalda via SFTP.
+     *
+     * @param string $trigger Trigger type (manual or automatic). Default: manual.
+     * @return array Result with success status and message.
+     */
+    public function run_order_status_export( $trigger = 'manual' ) {
+        $start_time = microtime( true );
+        $this->log( 'Starting order status export...' );
+
+        // Check license.
+        if ( ! $this->license_manager->is_valid() ) {
+            $this->log( 'License validation failed.' );
+            woo_nalda_sync_logger()->log_order_status_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'License is not valid', 'woo-nalda-sync' )
+            );
+            return array(
+                'success' => false,
+                'message' => __( 'License is not valid.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $settings = woo_nalda_sync()->get_setting();
+
+        // Validate SFTP settings.
+        if ( empty( $settings['sftp_host'] ) || empty( $settings['sftp_username'] ) || empty( $settings['sftp_password'] ) ) {
+            $this->log( 'SFTP settings are not configured.' );
+            woo_nalda_sync_logger()->log_order_status_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                __( 'SFTP settings are not configured', 'woo-nalda-sync' )
+            );
+            return array(
+                'success' => false,
+                'message' => __( 'SFTP settings are not configured.', 'woo-nalda-sync' ),
+            );
+        }
+
+        // Generate CSV file.
+        $csv_result = $this->generate_order_status_csv();
+
+        if ( ! $csv_result['success'] ) {
+            woo_nalda_sync_logger()->log_order_status_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                $csv_result['message']
+            );
+            return $csv_result;
+        }
+
+        // Check if there are orders to export.
+        if ( $csv_result['order_count'] === 0 ) {
+            $this->log( 'No Nalda orders found to export.' );
+            woo_nalda_sync_logger()->log_order_status_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_SUCCESS,
+                __( 'No Nalda orders found to export', 'woo-nalda-sync' )
+            );
+            return array(
+                'success'     => true,
+                'message'     => __( 'No Nalda orders found to export.', 'woo-nalda-sync' ),
+                'order_count' => 0,
+            );
+        }
+
+        // Upload CSV via API.
+        $upload_result = $this->upload_order_status_csv( $csv_result['file_path'] );
+
+        // Clean up temporary file.
+        if ( file_exists( $csv_result['file_path'] ) ) {
+            unlink( $csv_result['file_path'] );
+        }
+
+        if ( ! $upload_result['success'] ) {
+            woo_nalda_sync_logger()->log_order_status_export(
+                $trigger,
+                Woo_Nalda_Sync_Logger::STATUS_ERROR,
+                $upload_result['message']
+            );
+            return $upload_result;
+        }
+
+        $duration = round( microtime( true ) - $start_time, 2 );
+
+        // Update sync stats.
+        $this->update_order_status_export_stats( $csv_result['order_count'] );
+
+        $this->log( sprintf( 'Order status export completed successfully in %s seconds. %d orders exported.', $duration, $csv_result['order_count'] ) );
+
+        // Log success.
+        $summary = sprintf(
+            __( 'Exported %d order statuses in %s seconds', 'woo-nalda-sync' ),
+            $csv_result['order_count'],
+            $duration
+        );
+        woo_nalda_sync_logger()->log_order_status_export(
+            $trigger,
+            Woo_Nalda_Sync_Logger::STATUS_SUCCESS,
+            $summary,
+            array(
+                'order_count' => $csv_result['order_count'],
+                'duration'    => $duration,
+            )
+        );
+
+        return array(
+            'success'     => true,
+            'message'     => sprintf(
+                __( 'Successfully exported %d order statuses in %s seconds.', 'woo-nalda-sync' ),
+                $csv_result['order_count'],
+                $duration
+            ),
+            'order_count' => $csv_result['order_count'],
+            'duration'    => $duration,
+        );
+    }
+
+    /**
+     * Generate order status CSV file.
+     *
+     * @return array Result with file path and order count.
+     */
+    private function generate_order_status_csv() {
+        $settings   = woo_nalda_sync()->get_setting();
+        $batch_size = isset( $settings['batch_size'] ) ? absint( $settings['batch_size'] ) : 100;
+
+        // Generate filename.
+        $filename = 'order-status_' . wp_date( 'Y-m-d_H-i-s' ) . '.csv';
+
+        // Use WordPress temp directory to avoid permission issues with cron.
+        $temp_dir  = get_temp_dir();
+        $file_path = trailingslashit( $temp_dir ) . $filename;
+
+        // If temp directory is not writable, fallback to uploads directory.
+        if ( ! wp_is_writable( $temp_dir ) ) {
+            $upload_dir = wp_upload_dir();
+            $file_path  = trailingslashit( $upload_dir['basedir'] ) . 'woo-nalda-sync/' . $filename;
+            wp_mkdir_p( dirname( $file_path ) );
+        }
+
+        $this->log( sprintf( 'Creating order status CSV file at: %s', $file_path ) );
+
+        // Open file for writing.
+        $file = fopen( $file_path, 'w' );
+
+        if ( ! $file ) {
+            $this->log( sprintf( 'Failed to create CSV file at: %s', $file_path ) );
+            return array(
+                'success' => false,
+                'message' => __( 'Failed to create CSV file.', 'woo-nalda-sync' ),
+            );
+        }
+
+        // Add BOM for UTF-8.
+        fwrite( $file, "\xEF\xBB\xBF" );
+
+        // Write header row.
+        fputcsv( $file, $this->order_status_csv_columns );
+
+        // Get Nalda orders in batches.
+        $page        = 1;
+        $order_count = 0;
+
+        do {
+            $args = array(
+                'limit'    => $batch_size,
+                'page'     => $page,
+                'orderby'  => 'date',
+                'order'    => 'DESC',
+                'meta_key' => '_nalda_order_id',
+                'meta_compare' => 'EXISTS',
+            );
+
+            $orders = wc_get_orders( $args );
+
+            if ( empty( $orders ) ) {
+                break;
+            }
+
+            foreach ( $orders as $order ) {
+                $rows = $this->get_order_status_rows( $order );
+
+                foreach ( $rows as $row ) {
+                    fputcsv( $file, $row );
+                    $order_count++;
+                }
+            }
+
+            $page++;
+
+        } while ( count( $orders ) === $batch_size );
+
+        fclose( $file );
+
+        $this->log( sprintf( 'Generated order status CSV with %d entries.', $order_count ) );
+
+        return array(
+            'success'     => true,
+            'file_path'   => $file_path,
+            'order_count' => $order_count,
+        );
+    }
+
+    /**
+     * Get order status rows for CSV export.
+     *
+     * Each order item gets its own row in the CSV.
+     *
+     * @param WC_Order $order WooCommerce order.
+     * @return array Array of row arrays.
+     */
+    private function get_order_status_rows( $order ) {
+        $rows = array();
+
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+
+        if ( empty( $nalda_order_id ) ) {
+            return $rows;
+        }
+
+        $wc_status = $order->get_status();
+
+        // Get expected delivery date from order meta or calculate from now.
+        $expected_delivery = $order->get_meta( '_nalda_expected_delivery_date' );
+        if ( empty( $expected_delivery ) ) {
+            // Default to order date + 3 days if not set.
+            $order_date        = $order->get_date_created();
+            $expected_delivery = $order_date ? $order_date->modify( '+3 days' )->format( 'd.m.y' ) : wp_date( 'd.m.y', strtotime( '+3 days' ) );
+        } else {
+            // Format to dd.mm.yy if it's a different format.
+            $expected_delivery = wp_date( 'd.m.y', strtotime( $expected_delivery ) );
+        }
+
+        // Get tracking code from order meta.
+        $tracking_code = $order->get_meta( '_nalda_tracking_code' );
+        if ( empty( $tracking_code ) ) {
+            // Try common tracking meta keys.
+            $tracking_keys = array( '_tracking_number', '_tracking_code', 'tracking_number', 'tracking_code' );
+            foreach ( $tracking_keys as $key ) {
+                $tracking_code = $order->get_meta( $key );
+                if ( ! empty( $tracking_code ) ) {
+                    break;
+                }
+            }
+        }
+
+        // Get items from order.
+        $order_items = $order->get_items();
+
+        foreach ( $order_items as $item ) {
+            $gtin = $item->get_meta( '_nalda_gtin' );
+
+            // Skip items without GTIN.
+            if ( empty( $gtin ) ) {
+                continue;
+            }
+
+            // Get item-specific delivery status if available.
+            $item_delivery_status = $item->get_meta( '_nalda_delivery_status' );
+            $state = $this->map_order_status_to_nalda_state( $wc_status, $item_delivery_status );
+
+            $rows[] = array(
+                'orderId'              => $nalda_order_id,
+                'gtin'                 => $gtin,
+                'state'                => $state,
+                'expectedDeliveryDate' => $expected_delivery,
+                'trackingCode'         => $tracking_code ?: '',
+            );
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Upload order status CSV via Nalda API.
+     *
+     * @param string $file_path Path to CSV file.
+     * @return array Result with success status and message.
+     */
+    private function upload_order_status_csv( $file_path ) {
+        $settings    = woo_nalda_sync()->get_setting();
+        $license_key = $this->license_manager->get_license_key();
+        $domain      = $this->license_manager->get_domain();
+
+        // Validate file exists.
+        if ( ! file_exists( $file_path ) ) {
+            $this->log( 'CSV file not found: ' . $file_path );
+            return array(
+                'success' => false,
+                'message' => __( 'CSV file not found.', 'woo-nalda-sync' ),
+            );
+        }
+
+        $file_content = file_get_contents( $file_path );
+        $filename     = basename( $file_path );
+
+        // Build multipart form data.
+        $boundary = wp_generate_uuid4();
+        $body     = '';
+
+        // Add text fields - note: csv_type is 'orders' for order status updates.
+        $fields = array(
+            'license_key'   => $license_key,
+            'domain'        => $domain,
+            'csv_type'      => 'orders',
+            'sftp_host'     => $settings['sftp_host'],
+            'sftp_port'     => (string) ( isset( $settings['sftp_port'] ) ? absint( $settings['sftp_port'] ) : 22 ),
+            'sftp_username' => $settings['sftp_username'],
+            'sftp_password' => $settings['sftp_password'],
+        );
+
+        foreach ( $fields as $name => $value ) {
+            $body .= "--{$boundary}\r\n";
+            $body .= "Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n";
+            $body .= "{$value}\r\n";
+        }
+
+        // Add CSV file.
+        $body .= "--{$boundary}\r\n";
+        $body .= "Content-Disposition: form-data; name=\"csv_file\"; filename=\"{$filename}\"\r\n";
+        $body .= "Content-Type: text/csv\r\n\r\n";
+        $body .= "{$file_content}\r\n";
+        $body .= "--{$boundary}--\r\n";
+
+        // Send request to API.
+        $api_url = 'https://license-manager-jonakyds.vercel.app/api/v2/nalda/csv-upload';
+
+        $this->log( 'Uploading order status CSV to Nalda API: ' . $filename );
+
+        $response = wp_remote_post( $api_url, array(
+            'timeout' => 60,
+            'headers' => array(
+                'Content-Type' => "multipart/form-data; boundary={$boundary}",
+            ),
+            'body'    => $body,
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            $this->log( 'CSV upload failed: ' . $response->get_error_message() );
+            return array(
+                'success' => false,
+                'message' => sprintf( __( 'Upload failed: %s', 'woo-nalda-sync' ), $response->get_error_message() ),
+            );
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+        $body        = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        // Check for success response (HTTP 201 for created).
+        if ( isset( $body['success'] ) && $body['success'] === true ) {
+            $request_id = isset( $body['data']['id'] ) ? $body['data']['id'] : 'N/A';
+            $message    = isset( $body['message'] ) ? $body['message'] : __( 'Order status CSV uploaded successfully.', 'woo-nalda-sync' );
+
+            $this->log( 'Order status CSV upload successful. Request ID: ' . $request_id );
+
+            return array(
+                'success'    => true,
+                'message'    => $message,
+                'request_id' => $request_id,
+            );
+        }
+
+        // Handle error response.
+        $error_code    = isset( $body['error']['code'] ) ? $body['error']['code'] : '';
+        $error_message = isset( $body['error']['message'] )
+            ? $body['error']['message']
+            : ( isset( $body['message'] ) ? $body['message'] : __( 'Unknown error occurred.', 'woo-nalda-sync' ) );
+
+        // Map error codes to user-friendly messages.
+        $error_messages = array(
+            'VALIDATION_ERROR'    => __( 'Invalid parameters or file type.', 'woo-nalda-sync' ),
+            'LICENSE_EXPIRED'     => __( 'Your license has expired.', 'woo-nalda-sync' ),
+            'LICENSE_REVOKED'     => __( 'Your license has been revoked.', 'woo-nalda-sync' ),
+            'DOMAIN_MISMATCH'     => __( 'Domain is not activated for this license.', 'woo-nalda-sync' ),
+            'LICENSE_NOT_FOUND'   => __( 'Invalid license key.', 'woo-nalda-sync' ),
+            'RATE_LIMIT_EXCEEDED' => __( 'Too many requests. Please wait a few minutes.', 'woo-nalda-sync' ),
+            'INTERNAL_ERROR'      => __( 'Server error. Please try again later.', 'woo-nalda-sync' ),
+        );
+
+        if ( isset( $error_messages[ $error_code ] ) ) {
+            $error_message = $error_messages[ $error_code ];
+        }
+
+        $this->log( 'Order status CSV upload failed with status ' . $status_code . ': ' . $error_message . ' (Code: ' . $error_code . ')' );
+
+        return array(
+            'success'    => false,
+            'message'    => $error_message,
+            'error_code' => $error_code,
+        );
+    }
+
+    /**
+     * Update order status export statistics.
+     *
+     * @param int $order_count Number of orders exported.
+     */
+    private function update_order_status_export_stats( $order_count ) {
+        $stats = get_option( 'woo_nalda_sync_stats', array() );
+
+        $stats['last_order_status_export']   = current_time( 'mysql' );
+        $stats['order_statuses_exported']    = $order_count;
+        $stats['total_order_status_exports'] = isset( $stats['total_order_status_exports'] ) ? $stats['total_order_status_exports'] + 1 : 1;
+
+        update_option( 'woo_nalda_sync_stats', $stats );
+    }
+
+    /**
+     * Get order status export sync status.
+     *
+     * @return array Sync status data.
+     */
+    public function get_order_status_export_status() {
+        $stats = get_option( 'woo_nalda_sync_stats', array() );
+
+        return array(
+            'last_sync'       => isset( $stats['last_order_status_export'] ) ? $stats['last_order_status_export'] : null,
+            'orders_exported' => isset( $stats['order_statuses_exported'] ) ? $stats['order_statuses_exported'] : 0,
+            'total_syncs'     => isset( $stats['total_order_status_exports'] ) ? $stats['total_order_status_exports'] : 0,
         );
     }
 }

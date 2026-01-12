@@ -82,6 +82,7 @@ class Woo_Nalda_Sync_Admin {
         // Sync AJAX handlers.
         add_action( 'wp_ajax_woo_nalda_sync_run_product_sync', array( $this, 'ajax_run_product_sync' ) );
         add_action( 'wp_ajax_woo_nalda_sync_run_order_sync', array( $this, 'ajax_run_order_sync' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_run_order_status_export', array( $this, 'ajax_run_order_status_export' ) );
         add_action( 'wp_ajax_woo_nalda_sync_get_upload_history', array( $this, 'ajax_get_upload_history' ) );
         add_action( 'wp_ajax_woo_nalda_sync_get_sync_logs', array( $this, 'ajax_get_sync_logs' ) );
         add_action( 'wp_ajax_woo_nalda_sync_clear_sync_logs', array( $this, 'ajax_clear_sync_logs' ) );
@@ -225,6 +226,9 @@ class Woo_Nalda_Sync_Admin {
                 'orderImport'       => __( 'Order Import', 'woo-nalda-sync' ),
                 'triggerManual'     => __( 'Manual', 'woo-nalda-sync' ),
                 'triggerAutomatic'  => __( 'Automatic', 'woo-nalda-sync' ),
+                // Order status export strings.
+                'exportingOrderStatus' => __( 'Exporting...', 'woo-nalda-sync' ),
+                'orderStatusExport'    => __( 'Order Status Export', 'woo-nalda-sync' ),
                 // Update strings.
                 'checkingUpdate'    => __( 'Checking for updates...', 'woo-nalda-sync' ),
                 'checkUpdate'       => __( 'Check for Updates', 'woo-nalda-sync' ),
@@ -295,6 +299,10 @@ class Woo_Nalda_Sync_Admin {
             'order_import_range'     => isset( $data['order_import_range'] ) ? sanitize_text_field( $data['order_import_range'] ) : 'today',
             'order_reduce_stock'     => isset( $data['order_reduce_stock'] ) ? 'yes' : 'no',
             'order_create_customers' => isset( $data['order_create_customers'] ) ? 'yes' : 'no',
+            
+            // Order Status Export Settings
+            'order_status_export_enabled'  => isset( $data['order_status_export_enabled'] ) ? 'yes' : 'no',
+            'order_status_export_schedule' => isset( $data['order_status_export_schedule'] ) ? sanitize_text_field( $data['order_status_export_schedule'] ) : 'hourly',
             
             // Nalda API Settings
             'nalda_api_key'          => isset( $data['nalda_api_key'] ) ? sanitize_text_field( $data['nalda_api_key'] ) : '',
@@ -427,6 +435,35 @@ class Woo_Nalda_Sync_Admin {
     }
 
     /**
+     * AJAX: Run order status export manually.
+     */
+    public function ajax_run_order_status_export() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        if ( ! $this->license_manager->is_valid() ) {
+            wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
+        }
+
+        try {
+            $result = $this->order_sync->run_order_status_export( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
+
+            if ( $result['success'] ) {
+                wp_send_json_success( $result );
+            } else {
+                wp_send_json_error( $result );
+            }
+        } catch ( Exception $e ) {
+            wp_send_json_error( array(
+                'message' => sprintf( __( 'Error: %s', 'woo-nalda-sync' ), $e->getMessage() ),
+            ) );
+        }
+    }
+
+    /**
      * Verify and repair cron schedules after manual sync.
      * This ensures that manual sync operations don't inadvertently
      * break the scheduled sync functionality.
@@ -445,6 +482,13 @@ class Woo_Nalda_Sync_Admin {
         // Check order sync schedule.
         if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
             if ( ! wp_next_scheduled( 'woo_nalda_sync_order_sync' ) ) {
+                $needs_reschedule = true;
+            }
+        }
+
+        // Check order status export schedule.
+        if ( ! empty( $settings['order_status_export_enabled'] ) && 'yes' === $settings['order_status_export_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_status_export' ) ) {
                 $needs_reschedule = true;
             }
         }

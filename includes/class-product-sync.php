@@ -885,10 +885,11 @@ class Woo_Nalda_Sync_Product_Sync {
         $boundary = wp_generate_uuid4();
         $body     = '';
 
-        // Add text fields.
+        // Add text fields - csv_type is 'products' for product exports.
         $fields = array(
             'license_key'   => $license_key,
             'domain'        => $domain,
+            'csv_type'      => 'products',
             'sftp_host'     => $settings['sftp_host'],
             'sftp_port'     => (string) ( isset( $settings['sftp_port'] ) ? absint( $settings['sftp_port'] ) : 22 ),
             'sftp_username' => $settings['sftp_username'],
@@ -1115,9 +1116,10 @@ class Woo_Nalda_Sync_Product_Sync {
      * @param int    $per_page Number of results per page.
      * @param int    $page     Page number.
      * @param string $status   Optional status filter (pending, processing, processed, failed).
+     * @param string $csv_type Optional CSV type filter ('products' or 'orders'). Default: 'products'.
      * @return array Result with uploads data or error message.
      */
-    public function get_upload_history( $per_page = 10, $page = 1, $status = '' ) {
+    public function get_upload_history( $per_page = 10, $page = 1, $status = '', $csv_type = 'products' ) {
         $license_key = $this->license_manager->get_license_key();
 
         if ( empty( $license_key ) ) {
@@ -1133,6 +1135,7 @@ class Woo_Nalda_Sync_Product_Sync {
         $query_args = array(
             'license_key' => $license_key,
             'domain'      => $this->license_manager->get_domain(),
+            'csv_type'    => $csv_type,
             'page'        => absint( $page ),
             'limit'       => absint( $per_page ),
         );
