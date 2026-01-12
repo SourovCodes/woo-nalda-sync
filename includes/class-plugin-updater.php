@@ -22,7 +22,7 @@ class Woo_Nalda_Sync_Plugin_Updater {
      *
      * @var string
      */
-    private $github_username = 'jonakyds';
+    private $github_username = 'SourovCodes';
 
     /**
      * GitHub repository name.
