@@ -37,32 +37,36 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
      * Generate and output the PDF.
      */
     public function generate() {
-        // Check if TCPDF is available, otherwise use FPDF fallback.
+        // Check if DOMPDF is available.
+        if ( class_exists( 'Dompdf\Dompdf' ) ) {
+            $this->generate_with_dompdf();
+            return;
+        }
+        
+        // Check if TCPDF is available.
         if ( class_exists( 'TCPDF' ) ) {
             $this->generate_with_tcpdf();
-        } else {
-            $this->generate_with_html_pdf();
+            return;
         }
+        
+        // Fallback: Generate simple PDF without external library.
+        $this->generate_simple_pdf();
     }
 
     /**
-     * Generate PDF using HTML to PDF conversion (built-in approach).
+     * Generate PDF using DOMPDF.
      */
-    private function generate_with_html_pdf() {
+    private function generate_with_dompdf() {
         $html = $this->get_delivery_note_html();
         
-        // Use DOMPDF if available.
-        if ( class_exists( 'Dompdf\Dompdf' ) ) {
-            $dompdf = new \Dompdf\Dompdf();
-            $dompdf->loadHtml( $html );
-            $dompdf->setPaper( 'A4', 'portrait' );
-            $dompdf->render();
-            $dompdf->stream( $this->get_filename(), array( 'Attachment' => true ) );
-            exit;
-        }
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml( $html );
+        $dompdf->setPaper( 'A4', 'portrait' );
+        $dompdf->render();
         
-        // Fallback: Output HTML with print styles.
-        $this->output_printable_html( $html );
+        // Force download.
+        $dompdf->stream( $this->get_filename(), array( 'Attachment' => true ) );
+        exit;
     }
 
     /**
@@ -89,42 +93,387 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
         // Write HTML content.
         $pdf->writeHTML( $this->get_delivery_note_html( false ), true, false, true, false, '' );
         
-        // Output PDF.
+        // Force download.
         $pdf->Output( $this->get_filename(), 'D' );
         exit;
     }
 
     /**
-     * Output printable HTML (fallback when no PDF library is available).
-     *
-     * @param string $html HTML content.
+     * Generate a simple PDF without external libraries.
+     * Uses basic PDF format specification.
      */
-    private function output_printable_html( $html ) {
-        $full_html = '<!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>' . esc_html( sprintf( __( 'Delivery Note #%s', 'woo-nalda-sync' ), $this->order->get_order_number() ) ) . '</title>
-            <style>
-                @media print {
-                    body { margin: 0; padding: 20px; }
-                    .no-print { display: none !important; }
-                }
-                @page { margin: 15mm; }
-            </style>
-        </head>
-        <body>
-            <div class="no-print" style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; text-align: center;">
-                <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-                    ' . esc_html__( 'Print / Save as PDF', 'woo-nalda-sync' ) . '
-                </button>
-            </div>
-            ' . $html . '
-        </body>
-        </html>';
+    private function generate_simple_pdf() {
+        $content = $this->get_plain_text_content();
+        $filename = $this->get_filename();
         
-        echo $full_html;
+        // PDF objects.
+        $objects = array();
+        $object_offsets = array();
+        
+        // Start building PDF.
+        $pdf = "%PDF-1.4\n";
+        
+        // Object 1: Catalog.
+        $object_offsets[1] = strlen( $pdf );
+        $pdf .= "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+        
+        // Object 2: Pages.
+        $object_offsets[2] = strlen( $pdf );
+        $pdf .= "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+        
+        // Object 3: Page.
+        $object_offsets[3] = strlen( $pdf );
+        $pdf .= "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>\nendobj\n";
+        
+        // Object 4: Content stream.
+        $stream = $this->build_pdf_content_stream();
+        $stream_length = strlen( $stream );
+        $object_offsets[4] = strlen( $pdf );
+        $pdf .= "4 0 obj\n<< /Length {$stream_length} >>\nstream\n{$stream}endstream\nendobj\n";
+        
+        // Object 5: Font (Helvetica).
+        $object_offsets[5] = strlen( $pdf );
+        $pdf .= "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n";
+        
+        // Object 6: Font (Helvetica-Bold).
+        $object_offsets[6] = strlen( $pdf );
+        $pdf .= "6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n";
+        
+        // Cross-reference table.
+        $xref_offset = strlen( $pdf );
+        $pdf .= "xref\n0 7\n";
+        $pdf .= "0000000000 65535 f \n";
+        for ( $i = 1; $i <= 6; $i++ ) {
+            $pdf .= sprintf( "%010d 00000 n \n", $object_offsets[ $i ] );
+        }
+        
+        // Trailer.
+        $pdf .= "trailer\n<< /Size 7 /Root 1 0 R >>\n";
+        $pdf .= "startxref\n{$xref_offset}\n%%EOF";
+        
+        // Send headers for download.
+        header( 'Content-Type: application/pdf' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Content-Length: ' . strlen( $pdf ) );
+        header( 'Cache-Control: private, max-age=0, must-revalidate' );
+        header( 'Pragma: public' );
+        
+        echo $pdf;
         exit;
+    }
+
+    /**
+     * Build PDF content stream for simple PDF generation.
+     *
+     * @return string PDF content stream.
+     */
+    private function build_pdf_content_stream() {
+        $order = $this->order;
+        $stream = "BT\n";
+        
+        $y = 800; // Start from top.
+        $left_margin = 50;
+        $line_height = 14;
+        
+        // Store name / Logo replacement.
+        $store_name = $this->sanitize_pdf_text( get_bloginfo( 'name' ) );
+        $stream .= "/F2 16 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "({$store_name}) Tj\n";
+        
+        // Title: Delivery Note.
+        $y -= 30;
+        $stream .= "/F2 18 Tf\n";
+        $stream .= "350 " . ( $y + 30 ) . " Td\n";
+        $stream .= "(Delivery Note) Tj\n";
+        
+        // Order info.
+        $y -= 5;
+        $stream .= "/F1 10 Tf\n";
+        $stream .= "350 {$y} Td\n";
+        $order_text = $this->sanitize_pdf_text( sprintf( 'Order #%s', $order->get_order_number() ) );
+        $stream .= "({$order_text}) Tj\n";
+        
+        $y -= $line_height;
+        $stream .= "350 {$y} Td\n";
+        $date_text = $this->sanitize_pdf_text( sprintf( 'Date: %s', $order->get_date_created()->date_i18n( get_option( 'date_format' ) ) ) );
+        $stream .= "({$date_text}) Tj\n";
+        
+        // Nalda order ID.
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+        if ( $nalda_order_id ) {
+            $y -= $line_height;
+            $stream .= "350 {$y} Td\n";
+            $stream .= "(Nalda #{$nalda_order_id}) Tj\n";
+        }
+        
+        // Separator.
+        $y -= 30;
+        
+        // FROM (Seller).
+        $stream .= "/F2 11 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(From \\(Seller\\)) Tj\n";
+        
+        $y -= $line_height + 5;
+        $stream .= "/F1 10 Tf\n";
+        
+        $seller_lines = $this->get_seller_address_lines();
+        foreach ( $seller_lines as $line ) {
+            $stream .= "{$left_margin} {$y} Td\n";
+            $stream .= "(" . $this->sanitize_pdf_text( $line ) . ") Tj\n";
+            $y -= $line_height;
+        }
+        
+        // TO (Buyer) - on the right side.
+        $buyer_y = $y + ( count( $seller_lines ) * $line_height ) + $line_height + 5;
+        $stream .= "/F2 11 Tf\n";
+        $stream .= "320 {$buyer_y} Td\n";
+        $stream .= "(To \\(Buyer\\)) Tj\n";
+        
+        $buyer_y -= $line_height + 5;
+        $stream .= "/F1 10 Tf\n";
+        
+        $buyer_lines = $this->get_buyer_address_lines();
+        foreach ( $buyer_lines as $line ) {
+            $stream .= "320 {$buyer_y} Td\n";
+            $stream .= "(" . $this->sanitize_pdf_text( $line ) . ") Tj\n";
+            $buyer_y -= $line_height;
+        }
+        
+        // "via Nalda" label.
+        if ( $nalda_order_id ) {
+            $stream .= "320 {$buyer_y} Td\n";
+            $stream .= "(via Nalda) Tj\n";
+        }
+        
+        // Products table.
+        $y -= 30;
+        
+        // Table header.
+        $stream .= "/F2 10 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(No) Tj\n";
+        $stream .= "80 {$y} Td\n";
+        $stream .= "(Description) Tj\n";
+        $stream .= "300 {$y} Td\n";
+        $stream .= "(Qty) Tj\n";
+        $stream .= "350 {$y} Td\n";
+        $stream .= "(Unit Price) Tj\n";
+        $stream .= "450 {$y} Td\n";
+        $stream .= "(Total) Tj\n";
+        
+        $y -= 5;
+        $stream .= "ET\n";
+        // Draw header line.
+        $stream .= "q\n0.5 w\n{$left_margin} {$y} m\n545 {$y} l\nS\nQ\n";
+        $stream .= "BT\n";
+        
+        $y -= $line_height;
+        $stream .= "/F1 10 Tf\n";
+        
+        // Products.
+        $row_num = 1;
+        $grand_total = 0;
+        $currency_symbol = get_woocommerce_currency_symbol( $order->get_currency() );
+        
+        foreach ( $order->get_items() as $item ) {
+            $quantity = $item->get_quantity();
+            $unit_price = $item->get_total() / max( 1, $quantity );
+            $total = $item->get_total();
+            $grand_total += $total;
+            
+            $stream .= "{$left_margin} {$y} Td\n";
+            $stream .= "({$row_num}) Tj\n";
+            
+            $stream .= "80 {$y} Td\n";
+            $product_name = $this->sanitize_pdf_text( mb_substr( $item->get_name(), 0, 35 ) );
+            $stream .= "({$product_name}) Tj\n";
+            
+            $stream .= "300 {$y} Td\n";
+            $stream .= "({$quantity}) Tj\n";
+            
+            $stream .= "350 {$y} Td\n";
+            $stream .= "(" . $this->sanitize_pdf_text( $currency_symbol . number_format( $unit_price, 2 ) ) . ") Tj\n";
+            
+            $stream .= "450 {$y} Td\n";
+            $stream .= "(" . $this->sanitize_pdf_text( $currency_symbol . number_format( $total, 2 ) ) . ") Tj\n";
+            
+            $y -= $line_height;
+            $row_num++;
+            
+            if ( $y < 200 ) break; // Prevent overflow.
+        }
+        
+        // Total line.
+        $y -= 5;
+        $stream .= "ET\n";
+        $stream .= "q\n0.5 w\n350 {$y} m\n545 {$y} l\nS\nQ\n";
+        $stream .= "BT\n";
+        
+        $y -= $line_height;
+        $stream .= "/F2 11 Tf\n";
+        $stream .= "350 {$y} Td\n";
+        $stream .= "(Grand Total:) Tj\n";
+        $stream .= "450 {$y} Td\n";
+        $stream .= "(" . $this->sanitize_pdf_text( $currency_symbol . number_format( $grand_total, 2 ) ) . ") Tj\n";
+        
+        // Delivery type section.
+        $y -= 40;
+        $stream .= "/F2 10 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(Delivery type:) Tj\n";
+        $stream .= "/F1 10 Tf\n";
+        $stream .= "150 {$y} Td\n";
+        $stream .= "([  ] delivery service    [  ] post    [  ] self-collection) Tj\n";
+        
+        $y -= $line_height + 5;
+        $stream .= "/F2 10 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(Number of packages:) Tj\n";
+        $stream .= "/F1 10 Tf\n";
+        $stream .= "180 {$y} Td\n";
+        $stream .= "(_____________) Tj\n";
+        
+        $y -= $line_height + 5;
+        $stream .= "/F2 10 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(Comments:) Tj\n";
+        
+        // Signature section.
+        $y -= 50;
+        $stream .= "/F2 10 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(Received in good condition:) Tj\n";
+        
+        $y -= 30;
+        $stream .= "ET\n";
+        $stream .= "q\n0.5 w\n{$left_margin} {$y} m\n250 {$y} l\nS\nQ\n";
+        $stream .= "BT\n";
+        
+        $y -= 12;
+        $stream .= "/F1 8 Tf\n";
+        $stream .= "{$left_margin} {$y} Td\n";
+        $stream .= "(date, signature) Tj\n";
+        
+        // Thank you.
+        $y -= 40;
+        $stream .= "/F1 10 Tf\n";
+        $stream .= "200 {$y} Td\n";
+        $stream .= "(Thank you for doing business with us!) Tj\n";
+        
+        $stream .= "ET\n";
+        
+        return $stream;
+    }
+
+    /**
+     * Get seller address lines.
+     *
+     * @return array Address lines.
+     */
+    private function get_seller_address_lines() {
+        $lines = array();
+        $lines[] = get_bloginfo( 'name' );
+        
+        $address = WC()->countries->get_base_address();
+        if ( $address ) {
+            $lines[] = $address;
+        }
+        
+        $address_2 = WC()->countries->get_base_address_2();
+        if ( $address_2 ) {
+            $lines[] = $address_2;
+        }
+        
+        $city_line = trim( WC()->countries->get_base_postcode() . ' ' . WC()->countries->get_base_city() );
+        if ( $city_line ) {
+            $lines[] = $city_line;
+        }
+        
+        $country = WC()->countries->get_base_country();
+        if ( $country && isset( WC()->countries->countries[ $country ] ) ) {
+            $lines[] = WC()->countries->countries[ $country ];
+        }
+        
+        return $lines;
+    }
+
+    /**
+     * Get buyer address lines.
+     *
+     * @return array Address lines.
+     */
+    private function get_buyer_address_lines() {
+        $order = $this->order;
+        $lines = array();
+        
+        $name = trim( $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
+        if ( empty( $name ) ) {
+            $name = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
+        }
+        if ( $name ) {
+            $lines[] = $name;
+        }
+        
+        $address = $order->get_shipping_address_1() ?: $order->get_billing_address_1();
+        if ( $address ) {
+            $lines[] = $address;
+        }
+        
+        $address_2 = $order->get_shipping_address_2() ?: $order->get_billing_address_2();
+        if ( $address_2 ) {
+            $lines[] = $address_2;
+        }
+        
+        $postcode = $order->get_shipping_postcode() ?: $order->get_billing_postcode();
+        $city = $order->get_shipping_city() ?: $order->get_billing_city();
+        $city_line = trim( $postcode . ' ' . $city );
+        if ( $city_line ) {
+            $lines[] = $city_line;
+        }
+        
+        $country = $order->get_shipping_country() ?: $order->get_billing_country();
+        if ( $country && isset( WC()->countries->countries[ $country ] ) ) {
+            $lines[] = WC()->countries->countries[ $country ];
+        }
+        
+        return $lines;
+    }
+
+    /**
+     * Sanitize text for PDF.
+     *
+     * @param string $text Text to sanitize.
+     * @return string Sanitized text.
+     */
+    private function sanitize_pdf_text( $text ) {
+        // Convert to ASCII-safe string.
+        $text = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
+        // Escape special PDF characters.
+        $text = str_replace( '\\', '\\\\', $text );
+        $text = str_replace( '(', '\\(', $text );
+        $text = str_replace( ')', '\\)', $text );
+        // Replace non-ASCII with approximations.
+        $text = iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $text );
+        return $text;
+    }
+
+    /**
+     * Get plain text content for simple PDF.
+     *
+     * @return string Plain text content.
+     */
+    private function get_plain_text_content() {
+        $order = $this->order;
+        $content = '';
+        
+        $content .= get_bloginfo( 'name' ) . "\n\n";
+        $content .= "DELIVERY NOTE\n";
+        $content .= "Order #" . $order->get_order_number() . "\n";
+        $content .= "Date: " . $order->get_date_created()->date_i18n( get_option( 'date_format' ) ) . "\n\n";
+        
+        return $content;
     }
 
     /**
