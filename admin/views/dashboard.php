@@ -433,6 +433,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <thead>
                         <tr>
                             <th><?php esc_html_e( 'ID', 'woo-nalda-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Type', 'woo-nalda-sync' ); ?></th>
                             <th><?php esc_html_e( 'Status', 'woo-nalda-sync' ); ?></th>
                             <th class="wns-hide-mobile"><?php esc_html_e( 'Domain', 'woo-nalda-sync' ); ?></th>
                             <th><?php esc_html_e( 'Created', 'woo-nalda-sync' ); ?></th>

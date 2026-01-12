@@ -619,8 +619,17 @@
                     actionCell = '—';
                 }
 
+                // Get CSV type label and class
+                let csvTypeLabel = wooNaldaSync.strings.productExport || 'Product Export';
+                let csvTypeClass = 'wns-badge-info';
+                if (upload.csv_type === 'orders') {
+                    csvTypeLabel = wooNaldaSync.strings.orderStatusExport || 'Order Status Export';
+                    csvTypeClass = 'wns-badge-warning';
+                }
+
                 const $row = $('<tr>' +
                     '<td data-label="ID">' + self.escapeHtml(upload.id) + '</td>' +
+                    '<td data-label="Type"><span class="wns-badge wns-badge-sm ' + csvTypeClass + '">' + csvTypeLabel + '</span></td>' +
                     '<td data-label="Status"><span class="wns-badge wns-badge-sm ' + statusClass + '">' + statusLabel + '</span></td>' +
                     '<td data-label="Domain" class="wns-hide-mobile">' + self.escapeHtml(upload.domain) + '</td>' +
                     '<td data-label="Created">' + createdAt + '</td>' +
