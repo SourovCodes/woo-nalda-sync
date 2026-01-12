@@ -163,7 +163,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
 
     <!-- Sync Controls & Stats -->
     <div class="wns-grid wns-grid-2">
-        <!-- Product Sync Panel -->
+        <!-- Product Export Panel -->
         <div class="wns-card">
             <div class="wns-card-header">
                 <h2>
@@ -236,7 +236,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
             </div>
         </div>
 
-        <!-- Order Sync Panel -->
+        <!-- Order Import Panel -->
         <div class="wns-card">
             <div class="wns-card-header">
                 <h2>
@@ -537,7 +537,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                         <?php endif; ?>
                     </div>
 
-                    <!-- Step 4: Product Sync -->
+                    <!-- Step 4: Product Export -->
                     <div class="wns-checklist-item <?php echo $product_export_status ? 'completed' : ''; ?>">
                         <div class="wns-checklist-icon">
                             <?php if ( $product_export_status ) : ?>
@@ -547,7 +547,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                             <?php endif; ?>
                         </div>
                         <div class="wns-checklist-content">
-                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Product Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Product Export', 'woo-nalda-sync' ); ?></div>
                             <div class="wns-checklist-desc"><?php esc_html_e( 'Auto-export products to Nalda.', 'woo-nalda-sync' ); ?></div>
                         </div>
                         <?php if ( ! $product_export_status ) : ?>
@@ -557,7 +557,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                         <?php endif; ?>
                     </div>
 
-                    <!-- Step 5: Order Sync -->
+                    <!-- Step 5: Order Import -->
                     <div class="wns-checklist-item <?php echo $order_import_status ? 'completed' : ''; ?>">
                         <div class="wns-checklist-icon">
                             <?php if ( $order_import_status ) : ?>
@@ -567,7 +567,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                             <?php endif; ?>
                         </div>
                         <div class="wns-checklist-content">
-                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Order Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-checklist-title"><?php esc_html_e( 'Enable Order Import', 'woo-nalda-sync' ); ?></div>
                             <div class="wns-checklist-desc"><?php esc_html_e( 'Auto-import orders from Nalda.', 'woo-nalda-sync' ); ?></div>
                         </div>
                         <?php if ( ! $order_import_status ) : ?>

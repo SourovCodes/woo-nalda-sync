@@ -2,10 +2,10 @@
 /**
  * Product Meta Class
  *
- * Handles product-level Nalda sync settings, including:
- * - Per-product sync toggle on product edit pages
+ * Handles product-level Nalda export settings, including:
+ * - Per-product export toggle on product edit pages
  * - Bulk actions in the product list
- * - Custom column showing sync status
+ * - Custom column showing export status
  *
  * @package Woo_Nalda_Sync
  */

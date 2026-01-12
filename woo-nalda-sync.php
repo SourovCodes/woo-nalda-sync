@@ -66,14 +66,14 @@ final class Woo_Nalda_Sync {
     public $admin;
 
     /**
-     * Product Sync instance.
+     * Product Export instance.
      *
      * @var Woo_Nalda_Sync_Product_Export
      */
     public $product_export;
 
     /**
-     * Order Sync instance.
+     * Order Import instance.
      *
      * @var Woo_Nalda_Sync_Order_Import
      */
@@ -154,7 +154,7 @@ final class Woo_Nalda_Sync {
         $this->product_export = new Woo_Nalda_Sync_Product_Export( $this->license );
         $this->order_import   = new Woo_Nalda_Sync_Order_Import( $this->license );
 
-        // Initialize product meta (for per-product sync settings).
+        // Initialize product meta (for per-product export settings).
         if ( is_admin() ) {
             new Woo_Nalda_Sync_Product_Meta();
         }
@@ -191,14 +191,14 @@ final class Woo_Nalda_Sync {
         $settings = $this->get_setting();
         $needs_reschedule = false;
 
-        // Check product sync schedule.
+        // Check product export schedule.
         if ( ! empty( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'] ) {
             if ( ! wp_next_scheduled( 'woo_nalda_sync_product_export' ) ) {
                 $needs_reschedule = true;
             }
         }
 
-        // Check order sync schedule.
+        // Check order import schedule.
         if ( ! empty( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'] ) {
             if ( ! wp_next_scheduled( 'woo_nalda_sync_order_import' ) ) {
                 $needs_reschedule = true;
@@ -292,14 +292,14 @@ final class Woo_Nalda_Sync {
         // Aggressively clear all existing schedules.
         $this->clear_all_cron_events();
 
-        // Product sync schedule.
+        // Product export schedule.
         if ( ! empty( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'] ) {
             $recurrence = ! empty( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
             wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_export' );
         }
 
-        // Order sync schedule.
+        // Order import schedule.
         if ( ! empty( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'] ) {
             $recurrence = ! empty( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
@@ -361,10 +361,10 @@ final class Woo_Nalda_Sync {
             'default_delivery_time'  => '3',
             'return_period'          => '14',
             
-            // Sync Status
+            // Product Export Status
             'product_export_enabled'   => 'no',
             
-            // Order Sync Settings
+            // Order Import Settings
             'order_import_enabled'     => 'no',
             'order_import_schedule'    => 'hourly',
             

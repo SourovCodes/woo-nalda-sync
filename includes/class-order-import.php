@@ -1,6 +1,6 @@
 <?php
 /**
- * Order Sync Class
+ * Order Import Class
  *
  * Handles order import from Nalda Marketplace API to WooCommerce.
  *
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Order Sync class.
+ * Order Import class.
  */
 class Woo_Nalda_Sync_Order_Import {
 
@@ -72,7 +72,7 @@ class Woo_Nalda_Sync_Order_Import {
 
         // Check if sync is enabled.
         if ( isset( $settings['order_import_enabled'] ) && 'yes' !== $settings['order_import_enabled'] ) {
-            $this->log( 'Order sync is disabled. Skipping scheduled sync.' );
+            $this->log( 'Order import is disabled. Skipping scheduled sync.' );
             return;
         }
 
@@ -151,13 +151,13 @@ class Woo_Nalda_Sync_Order_Import {
     }
 
     /**
-     * Ensure order sync cron event is scheduled.
+     * Ensure order import cron event is scheduled.
      * This is a safety measure to prevent lost schedules.
      */
     private function ensure_cron_scheduled() {
         $settings = woo_nalda_sync()->get_setting();
 
-        // Only reschedule if order sync is enabled.
+        // Only reschedule if order import is enabled.
         if ( empty( $settings['order_import_enabled'] ) || 'yes' !== $settings['order_import_enabled'] ) {
             return;
         }
@@ -170,12 +170,12 @@ class Woo_Nalda_Sync_Order_Import {
             $recurrence = ! empty( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
             wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_import' );
-            $this->log( 'Order sync cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
+            $this->log( 'Order import cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
         }
     }
 
     /**
-     * Run order sync.
+     * Run order import.
      *
      * @param string $range   Date range for orders (default: 'today').
      * @param string $trigger Trigger type (manual or automatic). Default: manual.
@@ -183,7 +183,7 @@ class Woo_Nalda_Sync_Order_Import {
      */
     public function run_sync( $range = 'today', $trigger = 'manual' ) {
         $start_time = microtime( true );
-        $this->log( sprintf( 'Starting order sync with range: %s', $range ) );
+        $this->log( sprintf( 'Starting order import with range: %s', $range ) );
 
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
@@ -288,7 +288,7 @@ class Woo_Nalda_Sync_Order_Import {
         $this->update_sync_stats( $orders_created + $orders_updated );
 
         $this->log( sprintf(
-            'Order sync completed in %s seconds. Created: %d, Updated: %d, Skipped: %d',
+            'Order import completed in %s seconds. Created: %d, Updated: %d, Skipped: %d',
             $duration,
             $orders_created,
             $orders_updated,

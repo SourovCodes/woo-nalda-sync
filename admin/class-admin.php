@@ -25,14 +25,14 @@ class Woo_Nalda_Sync_Admin {
     private $license_manager;
 
     /**
-     * Product Sync instance.
+     * Product Export instance.
      *
      * @var Woo_Nalda_Sync_Product_Export
      */
     private $product_export;
 
     /**
-     * Order Sync instance.
+     * Order Import instance.
      *
      * @var Woo_Nalda_Sync_Order_Import
      */
@@ -49,8 +49,8 @@ class Woo_Nalda_Sync_Admin {
      * Constructor.
      *
      * @param Woo_Nalda_Sync_License_Manager $license_manager License manager instance.
-     * @param Woo_Nalda_Sync_Product_Export    $product_export    Product sync instance.
-     * @param Woo_Nalda_Sync_Order_Import      $order_import      Order sync instance.
+     * @param Woo_Nalda_Sync_Product_Export    $product_export    Product export instance.
+     * @param Woo_Nalda_Sync_Order_Import      $order_import      Order import instance.
      */
     public function __construct( $license_manager, $product_export = null, $order_import = null ) {
         $this->license_manager = $license_manager;
@@ -291,11 +291,11 @@ class Woo_Nalda_Sync_Admin {
             'default_delivery_time'  => isset( $data['default_delivery_time'] ) ? absint( $data['default_delivery_time'] ) : 3,
             'return_period'          => isset( $data['return_period'] ) ? absint( $data['return_period'] ) : 14,
             
-            // Sync Status
+            // Product Export Status
             'product_export_enabled'   => isset( $data['product_export_enabled'] ) ? 'yes' : 'no',
             'sync_default_mode'      => isset( $data['sync_default_mode'] ) ? sanitize_text_field( $data['sync_default_mode'] ) : 'include_all',
             
-            // Order Sync Settings
+            // Order Import Settings
             'order_import_enabled'     => isset( $data['order_import_enabled'] ) ? 'yes' : 'no',
             'order_import_schedule'    => isset( $data['order_import_schedule'] ) ? sanitize_text_field( $data['order_import_schedule'] ) : 'hourly',
             'order_import_range'     => isset( $data['order_import_range'] ) ? sanitize_text_field( $data['order_import_range'] ) : 'today',
@@ -375,7 +375,7 @@ class Woo_Nalda_Sync_Admin {
     }
 
     /**
-     * AJAX: Run product sync manually.
+     * AJAX: Run product export manually.
      */
     public function ajax_run_product_export() {
         check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
@@ -401,7 +401,7 @@ class Woo_Nalda_Sync_Admin {
     }
 
     /**
-     * AJAX: Run order sync manually.
+     * AJAX: Run order import manually.
      */
     public function ajax_run_order_import() {
         check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
@@ -474,14 +474,14 @@ class Woo_Nalda_Sync_Admin {
         $settings = woo_nalda_sync()->get_setting();
         $needs_reschedule = false;
 
-        // Check product sync schedule.
+        // Check product export schedule.
         if ( ! empty( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'] ) {
             if ( ! wp_next_scheduled( 'woo_nalda_sync_product_export' ) ) {
                 $needs_reschedule = true;
             }
         }
 
-        // Check order sync schedule.
+        // Check order import schedule.
         if ( ! empty( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'] ) {
             if ( ! wp_next_scheduled( 'woo_nalda_sync_order_import' ) ) {
                 $needs_reschedule = true;

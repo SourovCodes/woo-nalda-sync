@@ -1,6 +1,6 @@
 <?php
 /**
- * Product Sync Class
+ * Product Export Class
  *
  * Handles product CSV generation and SFTP upload via Nalda API.
  *
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Product Sync class.
+ * Product Export class.
  */
 class Woo_Nalda_Sync_Product_Export {
 
@@ -121,7 +121,7 @@ class Woo_Nalda_Sync_Product_Export {
 
         // Check if sync is enabled.
         if ( isset( $settings['product_export_enabled'] ) && 'yes' !== $settings['product_export_enabled'] ) {
-            $this->log( 'Product sync is disabled. Skipping scheduled sync.' );
+            $this->log( 'Product export is disabled. Skipping scheduled sync.' );
             return;
         }
 
@@ -144,13 +144,13 @@ class Woo_Nalda_Sync_Product_Export {
     }
 
     /**
-     * Ensure product sync cron event is scheduled.
+     * Ensure product export cron event is scheduled.
      * This is a safety measure to prevent lost schedules.
      */
     private function ensure_cron_scheduled() {
         $settings = woo_nalda_sync()->get_setting();
 
-        // Only reschedule if product sync is enabled.
+        // Only reschedule if product export is enabled.
         if ( empty( $settings['product_export_enabled'] ) || 'yes' !== $settings['product_export_enabled'] ) {
             return;
         }
@@ -163,19 +163,19 @@ class Woo_Nalda_Sync_Product_Export {
             $recurrence = ! empty( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
             wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_export' );
-            $this->log( 'Product sync cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
+            $this->log( 'Product export cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
         }
     }
 
     /**
-     * Run product sync.
+     * Run product export.
      *
      * @param string $trigger Trigger type (manual or automatic). Default: manual.
      * @return array Result with success status and message.
      */
     public function run_sync( $trigger = 'manual' ) {
         $start_time = microtime( true );
-        $this->log( 'Starting product sync...' );
+        $this->log( 'Starting product export...' );
 
         // Check license.
         if ( ! $this->license_manager->is_valid() ) {
@@ -240,7 +240,7 @@ class Woo_Nalda_Sync_Product_Export {
         // Update sync stats.
         $this->update_sync_stats( $csv_result['product_count'] );
 
-        $this->log( sprintf( 'Product sync completed successfully in %s seconds. %d products exported.', $duration, $csv_result['product_count'] ) );
+        $this->log( sprintf( 'Product export completed successfully in %s seconds. %d products exported.', $duration, $csv_result['product_count'] ) );
 
         // Log success.
         $summary = sprintf(
