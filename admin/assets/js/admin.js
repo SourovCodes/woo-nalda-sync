@@ -772,29 +772,45 @@
      * Sync Logs Manager
      */
     const SyncLogsManager = {
+        currentPage: 1,
+        perPage: 15,
+        logs: [],
+        filterType: '',
+        filterStatus: '',
+
         init: function () {
             this.bindEvents();
             this.loadLogs();
         },
 
         bindEvents: function () {
-            $(document).on('click', '#wns-refresh-logs', this.loadLogs.bind(this));
-            $(document).on('click', '#wns-clear-logs', this.clearLogs.bind(this));
+            $(document).on('click', '#wns-refresh-logs', this.handleRefresh.bind(this));
+            $(document).on('click', '#wns-clear-logs', this.handleClear.bind(this));
+            $(document).on('click', '.wns-logs-prev', this.prevPage.bind(this));
+            $(document).on('click', '.wns-logs-next', this.nextPage.bind(this));
+            $(document).on('click', '.wns-log-toggle-details', this.toggleDetails.bind(this));
+            $(document).on('change', '#wns-logs-filter-type', this.handleFilterTypeChange.bind(this));
+            $(document).on('change', '#wns-logs-filter-status', this.handleFilterStatusChange.bind(this));
+            $(document).on('click', '#wns-legend-toggle', this.toggleLegend.bind(this));
         },
 
-        loadLogs: function () {
+        loadLogs: function (page) {
+            const self = this;
             const $container = $('#wns-logs-container');
+            const $list = $('#wns-logs-list');
+            const $loading = $('#wns-logs-loading');
+            const $empty = $('#wns-logs-empty');
+            const $pagination = $('#wns-logs-pagination');
 
             if (!$container.length) {
                 return;
             }
 
-            $container.html(
-                '<div class="wns-logs-loading">' +
-                '<span class="spinner is-active" style="float: none;"></span> ' +
-                (wooNaldaSync.strings.loadingLogs || 'Loading logs...') +
-                '</div>'
-            );
+            page = page || this.currentPage;
+            $loading.show();
+            $list.hide();
+            $empty.hide();
+            $pagination.hide();
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
@@ -802,36 +818,173 @@
                 data: {
                     action: 'woo_nalda_sync_get_sync_logs',
                     nonce: wooNaldaSync.nonce,
-                    limit: 20
+                    page: page,
+                    limit: this.perPage,
+                    type: this.filterType,
+                    status: this.filterStatus
                 },
                 success: function (response) {
-                    if (response.success) {
-                        SyncLogsManager.renderLogs(response.data.logs);
+                    $loading.hide();
+
+                    if (response.success && response.data.logs && response.data.logs.length > 0) {
+                        self.logs = response.data.logs;
+                        self.currentPage = page;
+                        self.renderLogs(response.data);
+                        $list.show();
+
+                        const total = response.data.total || response.data.logs.length;
+                        if (total > self.perPage) {
+                            self.updatePagination(response.data);
+                            $pagination.show();
+                        }
                     } else {
-                        $container.html(
-                            '<div class="wns-alert wns-alert-error">' +
-                            (response.data.message || 'Failed to load logs.') +
-                            '</div>'
-                        );
+                        $empty.show();
                     }
                 },
                 error: function () {
-                    $container.html(
-                        '<div class="wns-alert wns-alert-error">' +
-                        'Connection error. Please try again.' +
-                        '</div>'
-                    );
+                    $loading.hide();
+                    Toast.error(wooNaldaSync.strings.error || 'An error occurred');
                 }
             });
         },
 
-        clearLogs: function () {
+        renderLogs: function (data) {
+            const self = this;
+            const $list = $('#wns-logs-list');
+
+            let html = '';
+            data.logs.forEach(function (log) {
+                const date = new Date(log.timestamp * 1000);
+                const formattedDate = date.toLocaleDateString();
+                const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                // Determine status icon and class
+                let statusIcon = 'yes';
+                let statusClass = 'success';
+                if (log.status === 'error') {
+                    statusIcon = 'dismiss';
+                    statusClass = 'error';
+                } else if (log.status === 'warning') {
+                    statusIcon = 'warning';
+                    statusClass = 'warning';
+                }
+
+                // Determine type badge
+                let typeClass = 'info';
+                let typeLabel = wooNaldaSync.strings.productExport || 'Product Export';
+                let typeIcon = 'upload';
+                if (log.type === 'order_import') {
+                    typeClass = 'purple';
+                    typeLabel = wooNaldaSync.strings.orderImport || 'Order Import';
+                    typeIcon = 'download';
+                } else if (log.type === 'order_status_export') {
+                    typeClass = 'warning';
+                    typeLabel = wooNaldaSync.strings.orderStatusExport || 'Order Status Export';
+                    typeIcon = 'update';
+                }
+
+                // Trigger badge
+                const triggerClass = log.trigger === 'manual' ? 'secondary' : 'default';
+                const triggerIcon = log.trigger === 'manual' ? 'admin-users' : 'clock';
+                const triggerLabel = log.trigger === 'manual'
+                    ? (wooNaldaSync.strings.triggerManual || 'Manual')
+                    : (wooNaldaSync.strings.triggerAutomatic || 'Automatic');
+
+                // Summary text
+                const summary = log.summary ? String(log.summary).replace(/</g, '&lt;').replace(/>/g, '&gt;') : self.getDefaultMessage(log.status, log.type);
+
+                // Build details HTML if available
+                let detailsHtml = '';
+                if (log.details && Object.keys(log.details).length > 0) {
+                    detailsHtml = '<div class="wns-log-details" data-log-id="' + (log.id || '') + '">';
+                    for (const [key, value] of Object.entries(log.details)) {
+                        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        detailsHtml += '<div class="wns-log-detail-row">' +
+                            '<span class="wns-log-detail-label">' + formattedKey + '</span>' +
+                            '<span class="wns-log-detail-value">' + self.escapeHtml(String(value)) + '</span>' +
+                            '</div>';
+                    }
+                    detailsHtml += '</div>';
+                }
+
+                html += '<div class="wns-log-entry">' +
+                    '<div class="wns-log-icon wns-log-icon-' + statusClass + '">' +
+                    '<span class="dashicons dashicons-' + statusIcon + '"></span>' +
+                    '</div>' +
+                    '<div class="wns-log-content">' +
+                    '<div class="wns-log-header">' +
+                    '<h4 class="wns-log-title">' + typeLabel + '</h4>' +
+                    '<div class="wns-log-badges">' +
+                    '<span class="wns-badge wns-badge-' + typeClass + '">' +
+                    '<span class="dashicons dashicons-' + typeIcon + '"></span>' +
+                    self.capitalizeFirst(log.type ? log.type.replace(/_/g, ' ') : 'sync') +
+                    '</span>' +
+                    '<span class="wns-badge wns-badge-' + statusClass + '">' +
+                    self.capitalizeFirst(log.status) +
+                    '</span>' +
+                    '<span class="wns-badge wns-badge-' + triggerClass + '">' +
+                    '<span class="dashicons dashicons-' + triggerIcon + '"></span>' +
+                    triggerLabel +
+                    '</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '<p class="wns-log-summary">' + summary + '</p>' +
+                    (detailsHtml ? '<div class="wns-log-actions">' +
+                        '<button type="button" class="wns-log-toggle-details">' +
+                        '<span class="dashicons dashicons-arrow-down-alt2"></span>' +
+                        '<span class="wns-toggle-text">' + (wooNaldaSync.strings.showDetails || 'Show details') + '</span>' +
+                        '</button>' +
+                        '</div>' + detailsHtml : '') +
+                    '</div>' +
+                    '<div class="wns-log-meta">' +
+                    '<div class="wns-log-time">' +
+                    '<span class="wns-log-date">' + formattedDate + '</span>' +
+                    '<span class="wns-log-timestamp">' + formattedTime + '</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+            });
+
+            $list.html(html);
+        },
+
+        updatePagination: function (data) {
+            const $pagination = $('#wns-logs-pagination');
+            const total = data.total || data.logs.length;
+            const totalPages = Math.ceil(total / this.perPage);
+
+            $pagination.find('.wns-pagination-info').text(
+                (wooNaldaSync.strings.pageInfo || 'Page {current} of {total}')
+                    .replace('{current}', this.currentPage)
+                    .replace('{total}', totalPages) +
+                ' (' + total + ' ' + (wooNaldaSync.strings.entries || 'entries') + ')'
+            );
+            $pagination.find('.wns-logs-prev').prop('disabled', this.currentPage <= 1);
+            $pagination.find('.wns-logs-next').prop('disabled', this.currentPage >= totalPages);
+        },
+
+        handleRefresh: function (e) {
+            e.preventDefault();
+            const $button = $(e.currentTarget);
+            const $icon = $button.find('.dashicons');
+
+            $icon.addClass('wns-spin');
+            this.loadLogs(1);
+
+            setTimeout(function () {
+                $icon.removeClass('wns-spin');
+            }, 500);
+        },
+
+        handleClear: function (e) {
+            e.preventDefault();
+
             if (!confirm(wooNaldaSync.strings.confirmClearLogs || 'Are you sure you want to clear all sync logs?')) {
                 return;
             }
 
-            const $button = $('#wns-clear-logs');
-            setButtonLoading($button, true);
+            const $button = $(e.currentTarget);
+            setButtonLoading($button, true, '');
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
@@ -845,7 +998,7 @@
 
                     if (response.success) {
                         Toast.success(response.data.message || 'Logs cleared successfully.');
-                        SyncLogsManager.loadLogs();
+                        SyncLogsManager.loadLogs(1);
                     } else {
                         Toast.error(response.data.message || 'Failed to clear logs.');
                     }
@@ -857,74 +1010,81 @@
             });
         },
 
-        renderLogs: function (logs) {
-            const $container = $('#wns-logs-container');
-
-            if (!logs || logs.length === 0) {
-                $container.html(
-                    '<div class="wns-empty-state" style="text-align: center; padding: 40px 20px; color: #666;">' +
-                    '<span class="dashicons dashicons-list-view" style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 16px;"></span>' +
-                    '<p>' + (wooNaldaSync.strings.noLogs || 'No sync logs yet. Run a sync to see activity here.') + '</p>' +
-                    '</div>'
-                );
-                return;
-            }
-
-            let html = '<table class="wns-logs-table widefat striped">' +
-                '<thead>' +
-                '<tr>' +
-                '<th style="width: 160px;">' + (wooNaldaSync.strings.logTime || 'Time') + '</th>' +
-                '<th style="width: 130px;">' + (wooNaldaSync.strings.logType || 'Type') + '</th>' +
-                '<th style="width: 100px;">' + (wooNaldaSync.strings.logTrigger || 'Trigger') + '</th>' +
-                '<th style="width: 80px;">' + (wooNaldaSync.strings.logStatus || 'Status') + '</th>' +
-                '<th>' + (wooNaldaSync.strings.logSummary || 'Summary') + '</th>' +
-                '</tr>' +
-                '</thead>' +
-                '<tbody>';
-
-            logs.forEach(function (log) {
-                let typeClass = 'wns-badge-purple';
-                let typeLabel = wooNaldaSync.strings.orderImport || 'Order Import';
-
-                if (log.type === 'product_export') {
-                    typeClass = 'wns-badge-info';
-                    typeLabel = wooNaldaSync.strings.productExport || 'Product Export';
-                } else if (log.type === 'order_status_export') {
-                    typeClass = 'wns-badge-warning';
-                    typeLabel = wooNaldaSync.strings.orderStatusExport || 'Order Status Export';
-                }
-
-                const triggerClass = log.trigger === 'manual' ? 'wns-badge-secondary' : 'wns-badge-default';
-                const triggerLabel = log.trigger === 'manual'
-                    ? (wooNaldaSync.strings.triggerManual || 'Manual')
-                    : (wooNaldaSync.strings.triggerAutomatic || 'Automatic');
-
-                let statusClass = 'wns-badge-default';
-                if (log.status === 'success') statusClass = 'wns-badge-success';
-                else if (log.status === 'error') statusClass = 'wns-badge-error';
-                else if (log.status === 'warning') statusClass = 'wns-badge-warning';
-
-                const statusLabel = log.status.charAt(0).toUpperCase() + log.status.slice(1);
-
-                const summary = log.summary ? String(log.summary).replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-
-                html += '<tr>' +
-                    '<td>' + SyncLogsManager.formatDate(log.timestamp) + '</td>' +
-                    '<td><span class="wns-badge ' + typeClass + '">' + typeLabel + '</span></td>' +
-                    '<td><span class="wns-badge ' + triggerClass + '">' + triggerLabel + '</span></td>' +
-                    '<td><span class="wns-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
-                    '<td>' + summary + '</td>' +
-                    '</tr>';
-            });
-
-            html += '</tbody></table>';
-            $container.html(html);
+        handleFilterTypeChange: function (e) {
+            this.filterType = $(e.currentTarget).val();
+            this.loadLogs(1);
         },
 
-        formatDate: function (timestamp) {
-            if (!timestamp) return '—';
-            const date = new Date(timestamp * 1000);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        handleFilterStatusChange: function (e) {
+            this.filterStatus = $(e.currentTarget).val();
+            this.loadLogs(1);
+        },
+
+        prevPage: function (e) {
+            e.preventDefault();
+            if (this.currentPage > 1) {
+                this.loadLogs(this.currentPage - 1);
+            }
+        },
+
+        nextPage: function (e) {
+            e.preventDefault();
+            this.loadLogs(this.currentPage + 1);
+        },
+
+        toggleDetails: function (e) {
+            e.preventDefault();
+            const $button = $(e.currentTarget);
+            const $entry = $button.closest('.wns-log-entry');
+            const $details = $entry.find('.wns-log-details');
+            const $text = $button.find('.wns-toggle-text');
+
+            if ($details.hasClass('is-visible')) {
+                $details.removeClass('is-visible');
+                $button.removeClass('is-expanded');
+                $text.text(wooNaldaSync.strings.showDetails || 'Show details');
+            } else {
+                $details.addClass('is-visible');
+                $button.addClass('is-expanded');
+                $text.text(wooNaldaSync.strings.hideDetails || 'Hide details');
+            }
+        },
+
+        toggleLegend: function (e) {
+            e.preventDefault();
+            const $card = $(e.currentTarget).closest('.wns-legend-card');
+            $card.toggleClass('is-collapsed');
+        },
+
+        getDefaultMessage: function (status, type) {
+            let action = 'Sync';
+            if (type === 'product_export') {
+                action = 'Product export';
+            } else if (type === 'order_import') {
+                action = 'Order import';
+            } else if (type === 'order_status_export') {
+                action = 'Order status export';
+            }
+
+            if (status === 'success') {
+                return action + ' completed successfully.';
+            } else if (status === 'error') {
+                return action + ' failed.';
+            } else {
+                return action + ' completed with warnings.';
+            }
+        },
+
+        capitalizeFirst: function (str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        },
+
+        escapeHtml: function (text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     };
 

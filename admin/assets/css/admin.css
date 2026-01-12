@@ -925,6 +925,11 @@
     }
 }
 
+/* Spin animation class */
+.wns-spin {
+    animation: wns-spin 0.8s linear infinite;
+}
+
 /* ==========================================================================
    Responsive
    ========================================================================== */
@@ -2460,84 +2465,329 @@
 }
 
 /* ==========================================================================
-   Sync Logs Table
+   Sync Logs Page
    ========================================================================== */
 
-.wns-logs-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
+/* Logs Card */
+.wns-logs-card .wns-card-body-flush {
+    padding: 0;
 }
 
-.wns-logs-table th {
-    text-align: left;
-    font-weight: 600;
-    color: var(--wns-gray-700);
-    background: var(--wns-gray-50);
-    padding: 12px 16px;
-    border-bottom: 2px solid var(--wns-gray-200);
+.wns-logs-filter {
+    display: flex;
+    gap: 8px;
 }
 
-.wns-logs-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--wns-gray-100);
-    vertical-align: middle;
+.wns-form-select-sm {
+    padding: 6px 32px 6px 10px;
+    font-size: 12px;
+    min-width: 120px;
 }
 
-.wns-logs-table tbody tr:hover {
-    background: var(--wns-gray-50);
-}
-
-.wns-logs-table .wns-badge {
-    display: inline-flex;
-    padding: 3px 8px;
-    font-size: 11px;
-}
-
+/* Logs Loading */
 .wns-logs-loading {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 40px 20px;
+    gap: 16px;
+    padding: 60px 24px;
     color: var(--wns-gray-500);
 }
 
-@media (max-width: 768px) {
-
-    .wns-logs-table th,
-    .wns-logs-table td {
-        padding: 8px 10px;
-        font-size: 12px;
-    }
-
-    .wns-logs-table th:nth-child(5),
-    .wns-logs-table td:nth-child(5) {
-        display: none;
-    }
+/* Logs Empty State */
+.wns-logs-empty {
+    text-align: center;
+    padding: 60px 24px;
 }
 
-/* ==========================================================================
-   Logs Legend
-   ========================================================================== */
+.wns-logs-empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: var(--wns-gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-.wns-legend-grid {
+.wns-logs-empty-icon .dashicons {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: var(--wns-gray-400);
+}
+
+.wns-logs-empty h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--wns-gray-800);
+}
+
+.wns-logs-empty p {
+    margin: 0 0 24px;
+    color: var(--wns-gray-500);
+    font-size: 14px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Logs List */
+.wns-logs-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Individual Log Entry */
+.wns-log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--wns-gray-100);
+    transition: var(--wns-transition);
+}
+
+.wns-log-entry:hover {
+    background: var(--wns-gray-50);
+}
+
+.wns-log-entry:last-child {
+    border-bottom: none;
+}
+
+/* Log Status Icon */
+.wns-log-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.wns-log-icon .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.wns-log-icon.wns-log-icon-success {
+    background: var(--wns-success-light);
+    color: var(--wns-success);
+}
+
+.wns-log-icon.wns-log-icon-warning {
+    background: var(--wns-warning-light);
+    color: var(--wns-warning);
+}
+
+.wns-log-icon.wns-log-icon-error {
+    background: var(--wns-danger-light);
+    color: var(--wns-danger);
+}
+
+/* Log Content */
+.wns-log-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.wns-log-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.wns-log-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wns-gray-900);
+    margin: 0;
+}
+
+.wns-log-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.wns-log-summary {
+    font-size: 14px;
+    color: var(--wns-gray-600);
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+/* Log Details */
+.wns-log-details {
+    background: var(--wns-gray-50);
+    border-radius: var(--wns-border-radius-sm);
+    padding: 12px 16px;
+    margin-top: 12px;
+    display: none;
+}
+
+.wns-log-details.is-visible {
+    display: block;
+}
+
+.wns-log-detail-row {
+    display: flex;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--wns-gray-200);
+}
+
+.wns-log-detail-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.wns-log-detail-row:first-child {
+    padding-top: 0;
+}
+
+.wns-log-detail-label {
+    font-weight: 500;
+    color: var(--wns-gray-600);
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.wns-log-detail-value {
+    color: var(--wns-gray-800);
+    word-break: break-word;
+}
+
+/* Log Meta */
+.wns-log-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.wns-log-time {
+    font-size: 13px;
+    color: var(--wns-gray-500);
+    text-align: right;
+}
+
+.wns-log-date {
+    display: block;
+    font-weight: 500;
+    color: var(--wns-gray-700);
+}
+
+.wns-log-timestamp {
+    display: block;
+    font-size: 12px;
+}
+
+/* Log Actions */
+.wns-log-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.wns-log-toggle-details {
+    background: none;
+    border: none;
+    color: var(--wns-primary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wns-log-toggle-details:hover {
+    text-decoration: underline;
+}
+
+.wns-log-toggle-details .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+}
+
+.wns-log-toggle-details.is-expanded .dashicons {
+    transform: rotate(180deg);
+}
+
+/* Logs Footer */
+.wns-logs-footer {
+    justify-content: center;
+}
+
+/* Pagination */
+.wns-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.wns-pagination-info {
+    font-size: 13px;
+    color: var(--wns-gray-500);
+}
+
+/* Legend Card */
+.wns-legend-card .wns-card-header-collapsible {
+    cursor: pointer;
+    user-select: none;
+}
+
+.wns-legend-card .wns-card-header-collapsible:hover {
+    background: var(--wns-gray-50);
+}
+
+.wns-collapse-icon {
+    color: var(--wns-gray-400);
+    transition: transform 0.2s ease;
+}
+
+.wns-legend-card.is-collapsed .wns-collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.wns-legend-card.is-collapsed .wns-legend-body {
+    display: none;
+}
+
+.wns-legend-sections {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
 }
 
 .wns-legend-section h4 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--wns-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--wns-gray-500);
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--wns-gray-200);
 }
 
 .wns-legend-items {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .wns-legend-item {
@@ -2547,7 +2797,7 @@
 }
 
 .wns-legend-item .wns-badge {
-    min-width: 100px;
+    min-width: 130px;
     justify-content: center;
 }
 
@@ -2556,9 +2806,44 @@
     color: var(--wns-gray-600);
 }
 
-@media (max-width: 992px) {
-    .wns-legend-grid {
+/* Badge small */
+.wns-badge-sm {
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .wns-log-entry {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .wns-log-meta {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .wns-log-time {
+        text-align: left;
+    }
+
+    .wns-logs-filter {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .wns-logs-filter .wns-form-select-sm {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .wns-card-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .wns-legend-sections {
         grid-template-columns: 1fr;
-        gap: 20px;
     }
 }
