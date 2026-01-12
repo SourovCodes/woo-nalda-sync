@@ -273,14 +273,14 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
             <table style="width: 100%; margin-bottom: 30px;">
                 <tr>
                     <td style="width: 48%; vertical-align: top; padding-right: 20px;">
-                        <h3 style="margin: 0 0 10px; font-size: 14px; color: #666; border-bottom: 2px solid #333; padding-bottom: 5px;">' . esc_html__( 'From (Seller)', 'woo-nalda-sync' ) . '</h3>
+                        <h3 style="margin: 0 0 10px; font-size: 14px; color: #666; border-bottom: 2px solid #333; padding-bottom: 5px;">' . esc_html__( 'Seller', 'woo-nalda-sync' ) . '</h3>
                         <p style="margin: 0;">
                             <strong>' . esc_html( $store_name ) . '</strong><br>
                             ' . $seller_address . '
                         </p>
                     </td>
                     <td style="width: 48%; vertical-align: top;">
-                        <h3 style="margin: 0 0 10px; font-size: 14px; color: #666; border-bottom: 2px solid #333; padding-bottom: 5px;">' . esc_html__( 'To (Buyer)', 'woo-nalda-sync' ) . '</h3>
+                        <h3 style="margin: 0 0 10px; font-size: 14px; color: #666; border-bottom: 2px solid #333; padding-bottom: 5px;">' . esc_html__( 'Buyer', 'woo-nalda-sync' ) . '</h3>
                         <p style="margin: 0;">
                             <strong>' . esc_html( $buyer_name ) . '</strong><br>
                             ' . $buyer_address . '
