@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Order Sync class.
  */
-class Woo_Nalda_Sync_Order_Sync {
+class Woo_Nalda_Sync_Order_Import {
 
     /**
      * Nalda API base URL.
@@ -46,7 +46,7 @@ class Woo_Nalda_Sync_Order_Sync {
      */
     private function init_hooks() {
         // Schedule cron events.
-        add_action( 'woo_nalda_sync_order_sync', array( $this, 'run_scheduled_sync' ) );
+        add_action( 'woo_nalda_sync_order_import', array( $this, 'run_scheduled_sync' ) );
         add_action( 'woo_nalda_sync_order_status_export', array( $this, 'run_scheduled_order_status_export' ) );
         
         // Disable customer-facing emails for Nalda orders.
@@ -71,7 +71,7 @@ class Woo_Nalda_Sync_Order_Sync {
         $settings = woo_nalda_sync()->get_setting();
 
         // Check if sync is enabled.
-        if ( isset( $settings['order_sync_enabled'] ) && 'yes' !== $settings['order_sync_enabled'] ) {
+        if ( isset( $settings['order_import_enabled'] ) && 'yes' !== $settings['order_import_enabled'] ) {
             $this->log( 'Order sync is disabled. Skipping scheduled sync.' );
             return;
         }
@@ -158,18 +158,18 @@ class Woo_Nalda_Sync_Order_Sync {
         $settings = woo_nalda_sync()->get_setting();
 
         // Only reschedule if order sync is enabled.
-        if ( empty( $settings['order_sync_enabled'] ) || 'yes' !== $settings['order_sync_enabled'] ) {
+        if ( empty( $settings['order_import_enabled'] ) || 'yes' !== $settings['order_import_enabled'] ) {
             return;
         }
 
         // Check if cron is already scheduled.
-        $next_scheduled = wp_next_scheduled( 'woo_nalda_sync_order_sync' );
+        $next_scheduled = wp_next_scheduled( 'woo_nalda_sync_order_import' );
 
         if ( ! $next_scheduled ) {
             // Cron is not scheduled, reschedule it.
-            $recurrence = ! empty( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly';
+            $recurrence = ! empty( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
-            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_sync' );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_import' );
             $this->log( 'Order sync cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
         }
     }
@@ -959,7 +959,7 @@ class Woo_Nalda_Sync_Order_Sync {
     private function update_sync_stats( $order_count ) {
         $stats = get_option( 'woo_nalda_sync_stats', array() );
 
-        $stats['last_order_sync']   = current_time( 'mysql' );
+        $stats['last_order_import']   = current_time( 'mysql' );
         $stats['orders_synced']     = isset( $stats['orders_synced'] ) ? $stats['orders_synced'] + $order_count : $order_count;
         $stats['total_order_syncs'] = isset( $stats['total_order_syncs'] ) ? $stats['total_order_syncs'] + 1 : 1;
 
@@ -993,7 +993,7 @@ class Woo_Nalda_Sync_Order_Sync {
         $stats = get_option( 'woo_nalda_sync_stats', array() );
 
         return array(
-            'last_sync'     => isset( $stats['last_order_sync'] ) ? $stats['last_order_sync'] : null,
+            'last_sync'     => isset( $stats['last_order_import'] ) ? $stats['last_order_import'] : null,
             'orders_synced' => isset( $stats['orders_synced'] ) ? $stats['orders_synced'] : 0,
             'total_syncs'   => isset( $stats['total_order_syncs'] ) ? $stats['total_order_syncs'] : 0,
         );

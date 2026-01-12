@@ -268,12 +268,12 @@ $update_info = $updater ? $updater->get_update_info() : false;
             </div>
         </div>
 
-        <!-- Product Sync Settings -->
+        <!-- Product Export Settings -->
         <div class="wns-card">
             <div class="wns-card-header">
                 <h2>
                     <span class="dashicons dashicons-media-spreadsheet"></span>
-                    <?php esc_html_e( 'Product Sync Settings', 'woo-nalda-sync' ); ?>
+                    <?php esc_html_e( 'Product Export Settings', 'woo-nalda-sync' ); ?>
                 </h2>
             </div>
             <div class="wns-card-body">
@@ -282,12 +282,12 @@ $update_info = $updater ? $updater->get_update_info() : false;
                 <div class="wns-settings-section">
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
-                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Product Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Product Export', 'woo-nalda-sync' ); ?></div>
                             <p class="wns-settings-row-desc"><?php esc_html_e( 'Enable automatic product export to Nalda Marketplace.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
                             <label class="wns-toggle">
-                                <input type="checkbox" name="product_sync_enabled" value="yes" <?php checked( isset( $settings['product_sync_enabled'] ) ? $settings['product_sync_enabled'] : 'no', 'yes' ); ?>>
+                                <input type="checkbox" name="product_export_enabled" value="yes" <?php checked( isset( $settings['product_export_enabled'] ) ? $settings['product_export_enabled'] : 'no', 'yes' ); ?>>
                                 <span class="wns-toggle-slider"></span>
                             </label>
                         </div>
@@ -295,13 +295,13 @@ $update_info = $updater ? $updater->get_update_info() : false;
 
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
-                            <div class="wns-settings-row-label"><?php esc_html_e( 'Default Sync Behavior', 'woo-nalda-sync' ); ?></div>
-                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Control which products are synced by default. You can override this per product.', 'woo-nalda-sync' ); ?></p>
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Default Export Behavior', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Control which products are exported by default. You can override this per product.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
                             <select name="sync_default_mode" class="wns-form-select">
-                                <option value="include_all" <?php selected( isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all', 'include_all' ); ?>><?php esc_html_e( 'Sync all products (opt-out)', 'woo-nalda-sync' ); ?></option>
-                                <option value="exclude_all" <?php selected( isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all', 'exclude_all' ); ?>><?php esc_html_e( 'Sync no products (opt-in)', 'woo-nalda-sync' ); ?></option>
+                                <option value="include_all" <?php selected( isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all', 'include_all' ); ?>><?php esc_html_e( 'Export all products (opt-out)', 'woo-nalda-sync' ); ?></option>
+                                <option value="exclude_all" <?php selected( isset( $settings['sync_default_mode'] ) ? $settings['sync_default_mode'] : 'include_all', 'exclude_all' ); ?>><?php esc_html_e( 'Export no products (opt-in)', 'woo-nalda-sync' ); ?></option>
                             </select>
                             <p class="wns-form-hint" style="margin-top: 8px;">
                                 <?php esc_html_e( 'Tip: Manage individual products from Products → All Products → "Nalda" column.', 'woo-nalda-sync' ); ?>
@@ -311,17 +311,17 @@ $update_info = $updater ? $updater->get_update_info() : false;
 
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
-                            <div class="wns-settings-row-label"><?php esc_html_e( 'Sync Schedule', 'woo-nalda-sync' ); ?></div>
-                            <p class="wns-settings-row-desc"><?php esc_html_e( 'How often should the sync run automatically.', 'woo-nalda-sync' ); ?></p>
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Export Schedule', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'How often should the export run automatically.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
-                            <select name="product_sync_schedule" class="wns-form-select">
-                                <option value="every_15_minutes" <?php selected( isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly', 'every_15_minutes' ); ?>><?php esc_html_e( 'Every 15 minutes', 'woo-nalda-sync' ); ?></option>
-                                <option value="every_30_minutes" <?php selected( isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly', 'every_30_minutes' ); ?>><?php esc_html_e( 'Every 30 minutes', 'woo-nalda-sync' ); ?></option>
-                                <option value="hourly" <?php selected( isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly', 'hourly' ); ?>><?php esc_html_e( 'Hourly', 'woo-nalda-sync' ); ?></option>
-                                <option value="every_6_hours" <?php selected( isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly', 'every_6_hours' ); ?>><?php esc_html_e( 'Every 6 hours', 'woo-nalda-sync' ); ?></option>
-                                <option value="every_12_hours" <?php selected( isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly', 'every_12_hours' ); ?>><?php esc_html_e( 'Every 12 hours', 'woo-nalda-sync' ); ?></option>
-                                <option value="daily" <?php selected( isset( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly', 'daily' ); ?>><?php esc_html_e( 'Daily', 'woo-nalda-sync' ); ?></option>
+                            <select name="product_export_schedule" class="wns-form-select">
+                                <option value="every_15_minutes" <?php selected( isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly', 'every_15_minutes' ); ?>><?php esc_html_e( 'Every 15 minutes', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_30_minutes" <?php selected( isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly', 'every_30_minutes' ); ?>><?php esc_html_e( 'Every 30 minutes', 'woo-nalda-sync' ); ?></option>
+                                <option value="hourly" <?php selected( isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly', 'hourly' ); ?>><?php esc_html_e( 'Hourly', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_6_hours" <?php selected( isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly', 'every_6_hours' ); ?>><?php esc_html_e( 'Every 6 hours', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_12_hours" <?php selected( isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly', 'every_12_hours' ); ?>><?php esc_html_e( 'Every 12 hours', 'woo-nalda-sync' ); ?></option>
+                                <option value="daily" <?php selected( isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly', 'daily' ); ?>><?php esc_html_e( 'Daily', 'woo-nalda-sync' ); ?></option>
                             </select>
                         </div>
                     </div>
@@ -384,12 +384,12 @@ $update_info = $updater ? $updater->get_update_info() : false;
             </div>
         </div>
 
-        <!-- Order Sync Settings -->
+        <!-- Order Import Settings -->
         <div class="wns-card">
             <div class="wns-card-header">
                 <h2>
                     <span class="dashicons dashicons-clipboard"></span>
-                    <?php esc_html_e( 'Order Sync Settings', 'woo-nalda-sync' ); ?>
+                    <?php esc_html_e( 'Order Import Settings', 'woo-nalda-sync' ); ?>
                 </h2>
             </div>
             <div class="wns-card-body">
@@ -398,12 +398,12 @@ $update_info = $updater ? $updater->get_update_info() : false;
                 <div class="wns-settings-section">
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
-                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Order Sync', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Enable Order Import', 'woo-nalda-sync' ); ?></div>
                             <p class="wns-settings-row-desc"><?php esc_html_e( 'Enable automatic order import from Nalda Marketplace.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
                             <label class="wns-toggle">
-                                <input type="checkbox" name="order_sync_enabled" value="yes" <?php checked( isset( $settings['order_sync_enabled'] ) ? $settings['order_sync_enabled'] : 'no', 'yes' ); ?>>
+                                <input type="checkbox" name="order_import_enabled" value="yes" <?php checked( isset( $settings['order_import_enabled'] ) ? $settings['order_import_enabled'] : 'no', 'yes' ); ?>>
                                 <span class="wns-toggle-slider"></span>
                             </label>
                         </div>
@@ -411,17 +411,17 @@ $update_info = $updater ? $updater->get_update_info() : false;
 
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
-                            <div class="wns-settings-row-label"><?php esc_html_e( 'Order Sync Schedule', 'woo-nalda-sync' ); ?></div>
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Import Schedule', 'woo-nalda-sync' ); ?></div>
                             <p class="wns-settings-row-desc"><?php esc_html_e( 'How often to check Nalda for new orders.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
-                            <select name="order_sync_schedule" class="wns-form-select">
-                                <option value="every_15_minutes" <?php selected( isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly', 'every_15_minutes' ); ?>><?php esc_html_e( 'Every 15 minutes', 'woo-nalda-sync' ); ?></option>
-                                <option value="every_30_minutes" <?php selected( isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly', 'every_30_minutes' ); ?>><?php esc_html_e( 'Every 30 minutes', 'woo-nalda-sync' ); ?></option>
-                                <option value="hourly" <?php selected( isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly', 'hourly' ); ?>><?php esc_html_e( 'Hourly', 'woo-nalda-sync' ); ?></option>
-                                <option value="every_6_hours" <?php selected( isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly', 'every_6_hours' ); ?>><?php esc_html_e( 'Every 6 hours', 'woo-nalda-sync' ); ?></option>
-                                <option value="every_12_hours" <?php selected( isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly', 'every_12_hours' ); ?>><?php esc_html_e( 'Every 12 hours', 'woo-nalda-sync' ); ?></option>
-                                <option value="daily" <?php selected( isset( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly', 'daily' ); ?>><?php esc_html_e( 'Daily', 'woo-nalda-sync' ); ?></option>
+                            <select name="order_import_schedule" class="wns-form-select">
+                                <option value="every_15_minutes" <?php selected( isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly', 'every_15_minutes' ); ?>><?php esc_html_e( 'Every 15 minutes', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_30_minutes" <?php selected( isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly', 'every_30_minutes' ); ?>><?php esc_html_e( 'Every 30 minutes', 'woo-nalda-sync' ); ?></option>
+                                <option value="hourly" <?php selected( isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly', 'hourly' ); ?>><?php esc_html_e( 'Hourly', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_6_hours" <?php selected( isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly', 'every_6_hours' ); ?>><?php esc_html_e( 'Every 6 hours', 'woo-nalda-sync' ); ?></option>
+                                <option value="every_12_hours" <?php selected( isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly', 'every_12_hours' ); ?>><?php esc_html_e( 'Every 12 hours', 'woo-nalda-sync' ); ?></option>
+                                <option value="daily" <?php selected( isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly', 'daily' ); ?>><?php esc_html_e( 'Daily', 'woo-nalda-sync' ); ?></option>
                             </select>
                         </div>
                     </div>

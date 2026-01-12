@@ -11,18 +11,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Get sync status.
-$product_sync_status = isset( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'];
-$order_sync_status   = isset( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'];
+$product_export_status = isset( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'];
+$order_import_status   = isset( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'];
 
 // Format dates.
-$last_product_sync = isset( $stats['last_product_sync'] ) ? $stats['last_product_sync'] : null;
-$last_order_sync   = isset( $stats['last_order_sync'] ) ? $stats['last_order_sync'] : null;
+$last_product_export = isset( $stats['last_product_export'] ) ? $stats['last_product_export'] : null;
+$last_order_import   = isset( $stats['last_order_import'] ) ? $stats['last_order_import'] : null;
 $products_synced   = isset( $stats['products_synced'] ) ? $stats['products_synced'] : 0;
 $orders_synced     = isset( $stats['orders_synced'] ) ? $stats['orders_synced'] : 0;
 
 // Format next sync times.
-$next_product_sync = isset( $next_sync_times['product_sync'] ) && $next_sync_times['product_sync'] ? $next_sync_times['product_sync'] : null;
-$next_order_sync   = isset( $next_sync_times['order_sync'] ) && $next_sync_times['order_sync'] ? $next_sync_times['order_sync'] : null;
+$next_product_export = isset( $next_sync_times['product_export'] ) && $next_sync_times['product_export'] ? $next_sync_times['product_export'] : null;
+$next_order_import   = isset( $next_sync_times['order_import'] ) && $next_sync_times['order_import'] ? $next_sync_times['order_import'] : null;
 
 // Check configuration status.
 $sftp_configured  = ! empty( $settings['sftp_host'] ) && ! empty( $settings['sftp_username'] );
@@ -32,8 +32,8 @@ $setup_progress   = 0;
 if ( $is_licensed ) $setup_progress++;
 if ( $sftp_configured ) $setup_progress++;
 if ( $api_configured ) $setup_progress++;
-if ( $product_sync_status ) $setup_progress++;
-if ( $order_sync_status ) $setup_progress++;
+if ( $product_export_status ) $setup_progress++;
+if ( $order_import_status ) $setup_progress++;
 $setup_percentage = ( $setup_progress / 5 ) * 100;
 ?>
 
@@ -129,7 +129,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                 </div>
                 <h3 class="wns-status-title"><?php esc_html_e( 'SFTP Connection', 'woo-nalda-sync' ); ?></h3>
                 <p class="wns-status-desc">
-                    <?php echo $sftp_configured ? esc_html__( 'Ready for product exports.', 'woo-nalda-sync' ) : esc_html__( 'Required for product sync.', 'woo-nalda-sync' ); ?>
+                    <?php echo $sftp_configured ? esc_html__( 'Ready for product exports.', 'woo-nalda-sync' ) : esc_html__( 'Required for product export.', 'woo-nalda-sync' ); ?>
                 </p>
                 <?php if ( ! $sftp_configured ) : ?>
                     <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-status-link">
@@ -150,7 +150,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                 </div>
                 <h3 class="wns-status-title"><?php esc_html_e( 'Nalda API', 'woo-nalda-sync' ); ?></h3>
                 <p class="wns-status-desc">
-                    <?php echo $api_configured ? esc_html__( 'Ready for order imports.', 'woo-nalda-sync' ) : esc_html__( 'Required for order sync.', 'woo-nalda-sync' ); ?>
+                    <?php echo $api_configured ? esc_html__( 'Ready for order imports.', 'woo-nalda-sync' ) : esc_html__( 'Required for order import.', 'woo-nalda-sync' ); ?>
                 </p>
                 <?php if ( ! $api_configured ) : ?>
                     <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-status-link">
@@ -171,7 +171,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <?php esc_html_e( 'Product Export', 'woo-nalda-sync' ); ?>
                 </h2>
                 <div class="wns-sync-toggle">
-                    <?php if ( $product_sync_status ) : ?>
+                    <?php if ( $product_export_status ) : ?>
                         <span class="wns-badge wns-badge-success wns-badge-sm">
                             <span class="dashicons dashicons-controls-repeat"></span>
                             <?php esc_html_e( 'Auto', 'woo-nalda-sync' ); ?>
@@ -192,8 +192,8 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <div class="wns-sync-stat">
                         <span class="wns-sync-stat-value">
                             <?php
-                            if ( $last_product_sync ) {
-                                echo esc_html( human_time_diff( strtotime( $last_product_sync ), current_time( 'timestamp' ) ) );
+                            if ( $last_product_export ) {
+                                echo esc_html( human_time_diff( strtotime( $last_product_export ), current_time( 'timestamp' ) ) );
                             } else {
                                 echo '—';
                             }
@@ -201,10 +201,10 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                         </span>
                         <span class="wns-sync-stat-label"><?php esc_html_e( 'Last Export', 'woo-nalda-sync' ); ?></span>
                     </div>
-                    <?php if ( $product_sync_status && $next_product_sync ) : ?>
+                    <?php if ( $product_export_status && $next_product_export ) : ?>
                         <div class="wns-sync-stat">
                             <span class="wns-sync-stat-value">
-                                <?php echo esc_html( human_time_diff( time(), $next_product_sync ) ); ?>
+                                <?php echo esc_html( human_time_diff( time(), $next_product_export ) ); ?>
                             </span>
                             <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Export', 'woo-nalda-sync' ); ?></span>
                         </div>
@@ -213,7 +213,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                 
                 <div class="wns-sync-actions">
                     <?php if ( $is_licensed && $sftp_configured ) : ?>
-                        <button type="button" class="wns-btn wns-btn-primary wns-sync-btn" id="wns-run-product-sync">
+                        <button type="button" class="wns-btn wns-btn-primary wns-sync-btn" id="wns-run-product-export">
                             <span class="dashicons dashicons-upload"></span>
                             <?php esc_html_e( 'Export Products Now', 'woo-nalda-sync' ); ?>
                         </button>
@@ -244,7 +244,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <?php esc_html_e( 'Order Import', 'woo-nalda-sync' ); ?>
                 </h2>
                 <div class="wns-sync-toggle">
-                    <?php if ( $order_sync_status ) : ?>
+                    <?php if ( $order_import_status ) : ?>
                         <span class="wns-badge wns-badge-success wns-badge-sm">
                             <span class="dashicons dashicons-controls-repeat"></span>
                             <?php esc_html_e( 'Auto', 'woo-nalda-sync' ); ?>
@@ -265,8 +265,8 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <div class="wns-sync-stat">
                         <span class="wns-sync-stat-value">
                             <?php
-                            if ( $last_order_sync ) {
-                                echo esc_html( human_time_diff( strtotime( $last_order_sync ), current_time( 'timestamp' ) ) );
+                            if ( $last_order_import ) {
+                                echo esc_html( human_time_diff( strtotime( $last_order_import ), current_time( 'timestamp' ) ) );
                             } else {
                                 echo '—';
                             }
@@ -274,10 +274,10 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                         </span>
                         <span class="wns-sync-stat-label"><?php esc_html_e( 'Last Import', 'woo-nalda-sync' ); ?></span>
                     </div>
-                    <?php if ( $order_sync_status && $next_order_sync ) : ?>
+                    <?php if ( $order_import_status && $next_order_import ) : ?>
                         <div class="wns-sync-stat">
                             <span class="wns-sync-stat-value">
-                                <?php echo esc_html( human_time_diff( time(), $next_order_sync ) ); ?>
+                                <?php echo esc_html( human_time_diff( time(), $next_order_import ) ); ?>
                             </span>
                             <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Import', 'woo-nalda-sync' ); ?></span>
                         </div>
@@ -286,7 +286,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                 
                 <div class="wns-sync-actions">
                     <?php if ( $is_licensed && $api_configured ) : ?>
-                        <button type="button" class="wns-btn wns-btn-primary wns-sync-btn" id="wns-run-order-sync">
+                        <button type="button" class="wns-btn wns-btn-primary wns-sync-btn" id="wns-run-order-import">
                             <span class="dashicons dashicons-download"></span>
                             <?php esc_html_e( 'Import Orders Now', 'woo-nalda-sync' ); ?>
                         </button>
@@ -313,7 +313,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
     <!-- Order Status Export Panel -->
     <?php
     // Get order status export stats and settings.
-    $order_status_export_stats    = woo_nalda_sync()->order_sync->get_order_status_export_status();
+    $order_status_export_stats    = woo_nalda_sync()->order_import->get_order_status_export_status();
     $last_order_status_export     = isset( $order_status_export_stats['last_sync'] ) ? $order_status_export_stats['last_sync'] : null;
     $orders_status_exported       = isset( $order_status_export_stats['orders_exported'] ) ? $order_status_export_stats['orders_exported'] : 0;
     $order_status_export_enabled  = isset( $settings['order_status_export_enabled'] ) && 'yes' === $settings['order_status_export_enabled'];
@@ -538,9 +538,9 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     </div>
 
                     <!-- Step 4: Product Sync -->
-                    <div class="wns-checklist-item <?php echo $product_sync_status ? 'completed' : ''; ?>">
+                    <div class="wns-checklist-item <?php echo $product_export_status ? 'completed' : ''; ?>">
                         <div class="wns-checklist-icon">
-                            <?php if ( $product_sync_status ) : ?>
+                            <?php if ( $product_export_status ) : ?>
                                 <span class="dashicons dashicons-yes-alt"></span>
                             <?php else : ?>
                                 <span class="wns-step-num">4</span>
@@ -550,7 +550,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                             <div class="wns-checklist-title"><?php esc_html_e( 'Enable Product Sync', 'woo-nalda-sync' ); ?></div>
                             <div class="wns-checklist-desc"><?php esc_html_e( 'Auto-export products to Nalda.', 'woo-nalda-sync' ); ?></div>
                         </div>
-                        <?php if ( ! $product_sync_status ) : ?>
+                        <?php if ( ! $product_export_status ) : ?>
                             <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-checklist-action">
                                 <?php esc_html_e( 'Enable', 'woo-nalda-sync' ); ?>
                             </a>
@@ -558,9 +558,9 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     </div>
 
                     <!-- Step 5: Order Sync -->
-                    <div class="wns-checklist-item <?php echo $order_sync_status ? 'completed' : ''; ?>">
+                    <div class="wns-checklist-item <?php echo $order_import_status ? 'completed' : ''; ?>">
                         <div class="wns-checklist-icon">
-                            <?php if ( $order_sync_status ) : ?>
+                            <?php if ( $order_import_status ) : ?>
                                 <span class="dashicons dashicons-yes-alt"></span>
                             <?php else : ?>
                                 <span class="wns-step-num">5</span>
@@ -570,7 +570,7 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                             <div class="wns-checklist-title"><?php esc_html_e( 'Enable Order Sync', 'woo-nalda-sync' ); ?></div>
                             <div class="wns-checklist-desc"><?php esc_html_e( 'Auto-import orders from Nalda.', 'woo-nalda-sync' ); ?></div>
                         </div>
-                        <?php if ( ! $order_sync_status ) : ?>
+                        <?php if ( ! $order_import_status ) : ?>
                             <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-checklist-action">
                                 <?php esc_html_e( 'Enable', 'woo-nalda-sync' ); ?>
                             </a>

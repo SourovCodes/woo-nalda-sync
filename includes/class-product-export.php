@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Product Sync class.
  */
-class Woo_Nalda_Sync_Product_Sync {
+class Woo_Nalda_Sync_Product_Export {
 
     /**
      * CSV columns in the required order.
@@ -84,7 +84,7 @@ class Woo_Nalda_Sync_Product_Sync {
      */
     private function init_hooks() {
         // Schedule cron events.
-        add_action( 'woo_nalda_sync_product_sync', array( $this, 'run_scheduled_sync' ) );
+        add_action( 'woo_nalda_sync_product_export', array( $this, 'run_scheduled_sync' ) );
     }
 
     /**
@@ -120,7 +120,7 @@ class Woo_Nalda_Sync_Product_Sync {
         $settings = woo_nalda_sync()->get_setting();
 
         // Check if sync is enabled.
-        if ( isset( $settings['product_sync_enabled'] ) && 'yes' !== $settings['product_sync_enabled'] ) {
+        if ( isset( $settings['product_export_enabled'] ) && 'yes' !== $settings['product_export_enabled'] ) {
             $this->log( 'Product sync is disabled. Skipping scheduled sync.' );
             return;
         }
@@ -151,18 +151,18 @@ class Woo_Nalda_Sync_Product_Sync {
         $settings = woo_nalda_sync()->get_setting();
 
         // Only reschedule if product sync is enabled.
-        if ( empty( $settings['product_sync_enabled'] ) || 'yes' !== $settings['product_sync_enabled'] ) {
+        if ( empty( $settings['product_export_enabled'] ) || 'yes' !== $settings['product_export_enabled'] ) {
             return;
         }
 
         // Check if cron is already scheduled.
-        $next_scheduled = wp_next_scheduled( 'woo_nalda_sync_product_sync' );
+        $next_scheduled = wp_next_scheduled( 'woo_nalda_sync_product_export' );
 
         if ( ! $next_scheduled ) {
             // Cron is not scheduled, reschedule it.
-            $recurrence = ! empty( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly';
+            $recurrence = ! empty( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
-            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_sync' );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_export' );
             $this->log( 'Product sync cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
         }
     }
@@ -1070,7 +1070,7 @@ class Woo_Nalda_Sync_Product_Sync {
     private function update_sync_stats( $product_count ) {
         $stats = get_option( 'woo_nalda_sync_stats', array() );
 
-        $stats['last_product_sync']   = current_time( 'mysql' );
+        $stats['last_product_export']   = current_time( 'mysql' );
         $stats['products_synced']     = $product_count;
         $stats['total_product_syncs'] = isset( $stats['total_product_syncs'] ) ? $stats['total_product_syncs'] + 1 : 1;
 
@@ -1104,7 +1104,7 @@ class Woo_Nalda_Sync_Product_Sync {
         $stats = get_option( 'woo_nalda_sync_stats', array() );
 
         return array(
-            'last_sync'       => isset( $stats['last_product_sync'] ) ? $stats['last_product_sync'] : null,
+            'last_sync'       => isset( $stats['last_product_export'] ) ? $stats['last_product_export'] : null,
             'products_synced' => isset( $stats['products_synced'] ) ? $stats['products_synced'] : 0,
             'total_syncs'     => isset( $stats['total_product_syncs'] ) ? $stats['total_product_syncs'] : 0,
         );

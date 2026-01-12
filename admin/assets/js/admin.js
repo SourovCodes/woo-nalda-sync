@@ -362,28 +362,28 @@
         },
 
         bindEvents: function () {
-            // Run product sync
-            $(document).on('click', '#wns-run-product-sync, #wns-run-first-sync', this.handleProductSync.bind(this));
+            // Run product export
+            $(document).on('click', '#wns-run-product-export, #wns-run-first-sync', this.handleProductExport.bind(this));
 
-            // Run order sync
-            $(document).on('click', '#wns-run-order-sync', this.handleOrderSync.bind(this));
+            // Run order import
+            $(document).on('click', '#wns-run-order-import', this.handleOrderImport.bind(this));
 
             // Run order status export
             $(document).on('click', '#wns-run-order-status-export', this.handleOrderStatusExport.bind(this));
         },
 
-        handleProductSync: function (e) {
+        handleProductExport: function (e) {
             e.preventDefault();
 
             const $button = $(e.currentTarget);
 
-            setButtonLoading($button, true, wooNaldaSync.strings.syncing);
+            setButtonLoading($button, true, wooNaldaSync.strings.exporting || wooNaldaSync.strings.syncing);
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
                 type: 'POST',
                 data: {
-                    action: 'woo_nalda_sync_run_product_sync',
+                    action: 'woo_nalda_sync_run_product_export',
                     nonce: wooNaldaSync.nonce
                 },
                 success: function (response) {
@@ -405,18 +405,18 @@
             });
         },
 
-        handleOrderSync: function (e) {
+        handleOrderImport: function (e) {
             e.preventDefault();
 
             const $button = $(e.currentTarget);
 
-            setButtonLoading($button, true, wooNaldaSync.strings.syncing);
+            setButtonLoading($button, true, wooNaldaSync.strings.importing || wooNaldaSync.strings.syncing);
 
             $.ajax({
                 url: wooNaldaSync.ajaxUrl,
                 type: 'POST',
                 data: {
-                    action: 'woo_nalda_sync_run_order_sync',
+                    action: 'woo_nalda_sync_run_order_import',
                     nonce: wooNaldaSync.nonce
                     // Range will be taken from plugin settings
                 },

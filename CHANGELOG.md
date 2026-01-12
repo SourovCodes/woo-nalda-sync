@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Order Status Export settings section in Settings page
 - Dashboard panel for Order Status Export with auto/manual badge
 
+### Changed
+- Renamed "Product Sync" to "Product Export" for clarity (data goes TO Nalda)
+- Renamed "Order Sync" to "Order Import" for clarity (data comes FROM Nalda)
+- Updated all user-facing labels to clarify data flow direction
+- Renamed internal keys: `product_sync_*` → `product_export_*`, `order_sync_*` → `order_import_*`
+- Renamed cron hooks: `woo_nalda_sync_product_sync` → `woo_nalda_sync_product_export`, `woo_nalda_sync_order_sync` → `woo_nalda_sync_order_import`
+- Renamed files: `class-product-sync.php` → `class-product-export.php`, `class-order-sync.php` → `class-order-import.php`
+- Renamed classes: `Woo_Nalda_Sync_Product_Sync` → `Woo_Nalda_Sync_Product_Export`, `Woo_Nalda_Sync_Order_Sync` → `Woo_Nalda_Sync_Order_Import`
+
 ## [1.0.4] - 2026-01-12
 
 ### Fixed

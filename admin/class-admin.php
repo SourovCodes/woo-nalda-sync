@@ -27,16 +27,16 @@ class Woo_Nalda_Sync_Admin {
     /**
      * Product Sync instance.
      *
-     * @var Woo_Nalda_Sync_Product_Sync
+     * @var Woo_Nalda_Sync_Product_Export
      */
-    private $product_sync;
+    private $product_export;
 
     /**
      * Order Sync instance.
      *
-     * @var Woo_Nalda_Sync_Order_Sync
+     * @var Woo_Nalda_Sync_Order_Import
      */
-    private $order_sync;
+    private $order_import;
 
     /**
      * Admin notices.
@@ -49,13 +49,13 @@ class Woo_Nalda_Sync_Admin {
      * Constructor.
      *
      * @param Woo_Nalda_Sync_License_Manager $license_manager License manager instance.
-     * @param Woo_Nalda_Sync_Product_Sync    $product_sync    Product sync instance.
-     * @param Woo_Nalda_Sync_Order_Sync      $order_sync      Order sync instance.
+     * @param Woo_Nalda_Sync_Product_Export    $product_export    Product sync instance.
+     * @param Woo_Nalda_Sync_Order_Import      $order_import      Order sync instance.
      */
-    public function __construct( $license_manager, $product_sync = null, $order_sync = null ) {
+    public function __construct( $license_manager, $product_export = null, $order_import = null ) {
         $this->license_manager = $license_manager;
-        $this->product_sync    = $product_sync;
-        $this->order_sync      = $order_sync;
+        $this->product_export    = $product_export;
+        $this->order_import      = $order_import;
 
         $this->init_hooks();
     }
@@ -80,8 +80,8 @@ class Woo_Nalda_Sync_Admin {
         add_action( 'wp_ajax_woo_nalda_sync_validate_nalda_api', array( $this, 'ajax_validate_nalda_api' ) );
         
         // Sync AJAX handlers.
-        add_action( 'wp_ajax_woo_nalda_sync_run_product_sync', array( $this, 'ajax_run_product_sync' ) );
-        add_action( 'wp_ajax_woo_nalda_sync_run_order_sync', array( $this, 'ajax_run_order_sync' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_run_product_export', array( $this, 'ajax_run_product_export' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_run_order_import', array( $this, 'ajax_run_order_import' ) );
         add_action( 'wp_ajax_woo_nalda_sync_run_order_status_export', array( $this, 'ajax_run_order_status_export' ) );
         add_action( 'wp_ajax_woo_nalda_sync_get_upload_history', array( $this, 'ajax_get_upload_history' ) );
         add_action( 'wp_ajax_woo_nalda_sync_get_sync_logs', array( $this, 'ajax_get_sync_logs' ) );
@@ -197,8 +197,10 @@ class Woo_Nalda_Sync_Admin {
                 'testing'           => __( 'Testing...', 'woo-nalda-sync' ),
                 'testConnection'    => __( 'Test Connection', 'woo-nalda-sync' ),
                 'syncing'           => __( 'Syncing...', 'woo-nalda-sync' ),
-                'syncProducts'      => __( 'Sync Products', 'woo-nalda-sync' ),
-                'syncOrders'        => __( 'Sync Orders', 'woo-nalda-sync' ),
+                'exportProducts'    => __( 'Export Products', 'woo-nalda-sync' ),
+                'importOrders'      => __( 'Import Orders', 'woo-nalda-sync' ),
+                'exporting'         => __( 'Exporting...', 'woo-nalda-sync' ),
+                'importing'         => __( 'Importing...', 'woo-nalda-sync' ),
                 'connectionSuccess' => __( 'Connection successful!', 'woo-nalda-sync' ),
                 'connectionFailed'  => __( 'Connection failed.', 'woo-nalda-sync' ),
                 'loading'           => __( 'Loading...', 'woo-nalda-sync' ),
@@ -281,7 +283,7 @@ class Woo_Nalda_Sync_Admin {
             'sftp_password'          => isset( $data['sftp_password'] ) ? $data['sftp_password'] : '',
             
             // Export Settings
-            'product_sync_schedule'  => isset( $data['product_sync_schedule'] ) ? sanitize_text_field( $data['product_sync_schedule'] ) : 'hourly',
+            'product_export_schedule'  => isset( $data['product_export_schedule'] ) ? sanitize_text_field( $data['product_export_schedule'] ) : 'hourly',
             'filename_pattern'       => isset( $data['filename_pattern'] ) ? sanitize_text_field( $data['filename_pattern'] ) : 'products_{date}.csv',
             'batch_size'             => isset( $data['batch_size'] ) ? absint( $data['batch_size'] ) : 100,
             
@@ -290,12 +292,12 @@ class Woo_Nalda_Sync_Admin {
             'return_period'          => isset( $data['return_period'] ) ? absint( $data['return_period'] ) : 14,
             
             // Sync Status
-            'product_sync_enabled'   => isset( $data['product_sync_enabled'] ) ? 'yes' : 'no',
+            'product_export_enabled'   => isset( $data['product_export_enabled'] ) ? 'yes' : 'no',
             'sync_default_mode'      => isset( $data['sync_default_mode'] ) ? sanitize_text_field( $data['sync_default_mode'] ) : 'include_all',
             
             // Order Sync Settings
-            'order_sync_enabled'     => isset( $data['order_sync_enabled'] ) ? 'yes' : 'no',
-            'order_sync_schedule'    => isset( $data['order_sync_schedule'] ) ? sanitize_text_field( $data['order_sync_schedule'] ) : 'hourly',
+            'order_import_enabled'     => isset( $data['order_import_enabled'] ) ? 'yes' : 'no',
+            'order_import_schedule'    => isset( $data['order_import_schedule'] ) ? sanitize_text_field( $data['order_import_schedule'] ) : 'hourly',
             'order_import_range'     => isset( $data['order_import_range'] ) ? sanitize_text_field( $data['order_import_range'] ) : 'today',
             'order_reduce_stock'     => isset( $data['order_reduce_stock'] ) ? 'yes' : 'no',
             'order_create_customers' => isset( $data['order_create_customers'] ) ? 'yes' : 'no',
@@ -337,7 +339,7 @@ class Woo_Nalda_Sync_Admin {
             wp_send_json_error( array( 'message' => __( 'Please fill in all SFTP fields.', 'woo-nalda-sync' ) ) );
         }
 
-        $result = $this->product_sync->validate_sftp_credentials( $credentials );
+        $result = $this->product_export->validate_sftp_credentials( $credentials );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );
@@ -363,7 +365,7 @@ class Woo_Nalda_Sync_Admin {
             wp_send_json_error( array( 'message' => __( 'Please enter your Nalda API key.', 'woo-nalda-sync' ) ) );
         }
 
-        $result = $this->order_sync->validate_api_credentials( $api_key, $api_url );
+        $result = $this->order_import->validate_api_credentials( $api_key, $api_url );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );
@@ -375,7 +377,7 @@ class Woo_Nalda_Sync_Admin {
     /**
      * AJAX: Run product sync manually.
      */
-    public function ajax_run_product_sync() {
+    public function ajax_run_product_export() {
         check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
 
         if ( ! current_user_can( 'manage_woocommerce' ) ) {
@@ -386,7 +388,7 @@ class Woo_Nalda_Sync_Admin {
             wp_send_json_error( array( 'message' => __( 'Please activate your license first.', 'woo-nalda-sync' ) ) );
         }
 
-        $result = $this->product_sync->run_sync( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
+        $result = $this->product_export->run_sync( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
         // Verify cron is still scheduled after manual sync.
         $this->verify_cron_after_sync();
@@ -401,7 +403,7 @@ class Woo_Nalda_Sync_Admin {
     /**
      * AJAX: Run order sync manually.
      */
-    public function ajax_run_order_sync() {
+    public function ajax_run_order_import() {
         check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
 
         if ( ! current_user_can( 'manage_woocommerce' ) ) {
@@ -417,7 +419,7 @@ class Woo_Nalda_Sync_Admin {
             $settings = woo_nalda_sync()->get_setting();
             $range    = isset( $_POST['range'] ) ? sanitize_text_field( wp_unslash( $_POST['range'] ) ) : ( isset( $settings['order_import_range'] ) ? $settings['order_import_range'] : 'today' );
             
-            $result = $this->order_sync->run_sync( $range, Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
+            $result = $this->order_import->run_sync( $range, Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
             // Verify cron is still scheduled after manual sync.
             $this->verify_cron_after_sync();
@@ -449,7 +451,7 @@ class Woo_Nalda_Sync_Admin {
         }
 
         try {
-            $result = $this->order_sync->run_order_status_export( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
+            $result = $this->order_import->run_order_status_export( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
             if ( $result['success'] ) {
                 wp_send_json_success( $result );
@@ -473,15 +475,15 @@ class Woo_Nalda_Sync_Admin {
         $needs_reschedule = false;
 
         // Check product sync schedule.
-        if ( ! empty( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
-            if ( ! wp_next_scheduled( 'woo_nalda_sync_product_sync' ) ) {
+        if ( ! empty( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_product_export' ) ) {
                 $needs_reschedule = true;
             }
         }
 
         // Check order sync schedule.
-        if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
-            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_sync' ) ) {
+        if ( ! empty( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_import' ) ) {
                 $needs_reschedule = true;
             }
         }
@@ -549,7 +551,7 @@ class Woo_Nalda_Sync_Admin {
         $page     = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
         $status   = isset( $_POST['status'] ) ? sanitize_text_field( wp_unslash( $_POST['status'] ) ) : '';
 
-        $result = $this->product_sync->get_upload_history( $per_page, $page, $status );
+        $result = $this->product_export->get_upload_history( $per_page, $page, $status );
 
         if ( $result['success'] ) {
             wp_send_json_success( $result );

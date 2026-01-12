@@ -68,16 +68,16 @@ final class Woo_Nalda_Sync {
     /**
      * Product Sync instance.
      *
-     * @var Woo_Nalda_Sync_Product_Sync
+     * @var Woo_Nalda_Sync_Product_Export
      */
-    public $product_sync;
+    public $product_export;
 
     /**
      * Order Sync instance.
      *
-     * @var Woo_Nalda_Sync_Order_Sync
+     * @var Woo_Nalda_Sync_Order_Import
      */
-    public $order_sync;
+    public $order_import;
 
     /**
      * Plugin Updater instance.
@@ -115,8 +115,8 @@ final class Woo_Nalda_Sync {
     private function includes() {
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-license-manager.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-sync-logger.php';
-        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-sync.php';
-        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-order-sync.php';
+        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-export.php';
+        require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-order-import.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-product-meta.php';
         require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-plugin-updater.php';
         
@@ -151,8 +151,8 @@ final class Woo_Nalda_Sync {
         $this->updater = new Woo_Nalda_Sync_Plugin_Updater();
 
         // Initialize sync classes.
-        $this->product_sync = new Woo_Nalda_Sync_Product_Sync( $this->license );
-        $this->order_sync   = new Woo_Nalda_Sync_Order_Sync( $this->license );
+        $this->product_export = new Woo_Nalda_Sync_Product_Export( $this->license );
+        $this->order_import   = new Woo_Nalda_Sync_Order_Import( $this->license );
 
         // Initialize product meta (for per-product sync settings).
         if ( is_admin() ) {
@@ -161,7 +161,7 @@ final class Woo_Nalda_Sync {
 
         // Initialize admin.
         if ( is_admin() ) {
-            $this->admin = new Woo_Nalda_Sync_Admin( $this->license, $this->product_sync, $this->order_sync );
+            $this->admin = new Woo_Nalda_Sync_Admin( $this->license, $this->product_export, $this->order_import );
         }
 
         // Check if we need to setup cron on first run after activation.
@@ -192,15 +192,15 @@ final class Woo_Nalda_Sync {
         $needs_reschedule = false;
 
         // Check product sync schedule.
-        if ( ! empty( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
-            if ( ! wp_next_scheduled( 'woo_nalda_sync_product_sync' ) ) {
+        if ( ! empty( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_product_export' ) ) {
                 $needs_reschedule = true;
             }
         }
 
         // Check order sync schedule.
-        if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
-            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_sync' ) ) {
+        if ( ! empty( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_import' ) ) {
                 $needs_reschedule = true;
             }
         }
@@ -293,17 +293,17 @@ final class Woo_Nalda_Sync {
         $this->clear_all_cron_events();
 
         // Product sync schedule.
-        if ( ! empty( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
-            $recurrence = ! empty( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly';
+        if ( ! empty( $settings['product_export_enabled'] ) && 'yes' === $settings['product_export_enabled'] ) {
+            $recurrence = ! empty( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
-            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_sync' );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_export' );
         }
 
         // Order sync schedule.
-        if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
-            $recurrence = ! empty( $settings['order_sync_schedule'] ) ? $settings['order_sync_schedule'] : 'hourly';
+        if ( ! empty( $settings['order_import_enabled'] ) && 'yes' === $settings['order_import_enabled'] ) {
+            $recurrence = ! empty( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly';
             $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
-            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_sync' );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_order_import' );
         }
 
         // Order status export schedule.
@@ -319,19 +319,19 @@ final class Woo_Nalda_Sync {
      */
     private function clear_all_cron_events() {
         // Clear using both methods for reliability.
-        wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
-        wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_product_export' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_order_import' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_order_status_export' );
 
         // Also unschedule by timestamp if still exists.
-        $product_timestamp = wp_next_scheduled( 'woo_nalda_sync_product_sync' );
+        $product_timestamp = wp_next_scheduled( 'woo_nalda_sync_product_export' );
         if ( $product_timestamp ) {
-            wp_unschedule_event( $product_timestamp, 'woo_nalda_sync_product_sync' );
+            wp_unschedule_event( $product_timestamp, 'woo_nalda_sync_product_export' );
         }
 
-        $order_timestamp = wp_next_scheduled( 'woo_nalda_sync_order_sync' );
+        $order_timestamp = wp_next_scheduled( 'woo_nalda_sync_order_import' );
         if ( $order_timestamp ) {
-            wp_unschedule_event( $order_timestamp, 'woo_nalda_sync_order_sync' );
+            wp_unschedule_event( $order_timestamp, 'woo_nalda_sync_order_import' );
         }
 
         $order_status_export_timestamp = wp_next_scheduled( 'woo_nalda_sync_order_status_export' );
@@ -353,7 +353,7 @@ final class Woo_Nalda_Sync {
             'sftp_password'          => '',
             
             // Export Settings
-            'product_sync_schedule'  => 'hourly',
+            'product_export_schedule'  => 'hourly',
             'filename_pattern'       => 'products_{date}.csv',
             'batch_size'             => '100',
             
@@ -362,11 +362,11 @@ final class Woo_Nalda_Sync {
             'return_period'          => '14',
             
             // Sync Status
-            'product_sync_enabled'   => 'no',
+            'product_export_enabled'   => 'no',
             
             // Order Sync Settings
-            'order_sync_enabled'     => 'no',
-            'order_sync_schedule'    => 'hourly',
+            'order_import_enabled'     => 'no',
+            'order_import_schedule'    => 'hourly',
             
             // Order Status Export Settings
             'order_status_export_enabled'  => 'no',
@@ -407,8 +407,8 @@ final class Woo_Nalda_Sync {
      */
     public static function deactivate_plugin() {
         // Clear all scheduled hooks.
-        wp_clear_scheduled_hook( 'woo_nalda_sync_product_sync' );
-        wp_clear_scheduled_hook( 'woo_nalda_sync_order_sync' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_product_export' );
+        wp_clear_scheduled_hook( 'woo_nalda_sync_order_import' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_order_status_export' );
         wp_clear_scheduled_hook( 'woo_nalda_sync_daily_license_check' );
         
@@ -507,8 +507,8 @@ final class Woo_Nalda_Sync {
      */
     public function get_next_sync_times() {
         return array(
-            'product_sync'        => wp_next_scheduled( 'woo_nalda_sync_product_sync' ),
-            'order_sync'          => wp_next_scheduled( 'woo_nalda_sync_order_sync' ),
+            'product_export'      => wp_next_scheduled( 'woo_nalda_sync_product_export' ),
+            'order_import'        => wp_next_scheduled( 'woo_nalda_sync_order_import' ),
             'order_status_export' => wp_next_scheduled( 'woo_nalda_sync_order_status_export' ),
         );
     }
