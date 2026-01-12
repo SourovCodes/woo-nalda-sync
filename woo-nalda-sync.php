@@ -169,6 +169,46 @@ final class Woo_Nalda_Sync {
             delete_transient( 'woo_nalda_sync_activation' );
             $this->reschedule_cron_events();
         }
+
+        // Periodically verify cron schedules are intact (runs once per hour max).
+        $this->maybe_verify_cron_schedules();
+    }
+
+    /**
+     * Verify and repair cron schedules if needed.
+     * This runs at most once per hour to prevent performance issues.
+     */
+    private function maybe_verify_cron_schedules() {
+        // Use a transient to limit how often this runs.
+        $last_check = get_transient( 'woo_nalda_sync_cron_verified' );
+        if ( $last_check ) {
+            return;
+        }
+
+        // Set transient for 1 hour.
+        set_transient( 'woo_nalda_sync_cron_verified', time(), HOUR_IN_SECONDS );
+
+        $settings = $this->get_setting();
+        $needs_reschedule = false;
+
+        // Check product sync schedule.
+        if ( ! empty( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_product_sync' ) ) {
+                $needs_reschedule = true;
+            }
+        }
+
+        // Check order sync schedule.
+        if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_sync' ) ) {
+                $needs_reschedule = true;
+            }
+        }
+
+        // Reschedule if needed.
+        if ( $needs_reschedule ) {
+            $this->reschedule_cron_events( $settings );
+        }
     }
 
     /**

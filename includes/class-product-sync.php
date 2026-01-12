@@ -137,6 +137,34 @@ class Woo_Nalda_Sync_Product_Sync {
         }
 
         $this->run_sync( Woo_Nalda_Sync_Logger::TRIGGER_AUTOMATIC );
+
+        // Ensure the cron event is still scheduled after sync completes.
+        // This prevents the schedule from being lost if there was an issue.
+        $this->ensure_cron_scheduled();
+    }
+
+    /**
+     * Ensure product sync cron event is scheduled.
+     * This is a safety measure to prevent lost schedules.
+     */
+    private function ensure_cron_scheduled() {
+        $settings = woo_nalda_sync()->get_setting();
+
+        // Only reschedule if product sync is enabled.
+        if ( empty( $settings['product_sync_enabled'] ) || 'yes' !== $settings['product_sync_enabled'] ) {
+            return;
+        }
+
+        // Check if cron is already scheduled.
+        $next_scheduled = wp_next_scheduled( 'woo_nalda_sync_product_sync' );
+
+        if ( ! $next_scheduled ) {
+            // Cron is not scheduled, reschedule it.
+            $recurrence = ! empty( $settings['product_sync_schedule'] ) ? $settings['product_sync_schedule'] : 'hourly';
+            $timestamp  = time() + ( 2 * MINUTE_IN_SECONDS );
+            wp_schedule_event( $timestamp, $recurrence, 'woo_nalda_sync_product_sync' );
+            $this->log( 'Product sync cron was not scheduled. Rescheduled for ' . gmdate( 'Y-m-d H:i:s', $timestamp ) );
+        }
     }
 
     /**

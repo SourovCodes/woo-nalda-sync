@@ -380,6 +380,9 @@ class Woo_Nalda_Sync_Admin {
 
         $result = $this->product_sync->run_sync( Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
+        // Verify cron is still scheduled after manual sync.
+        $this->verify_cron_after_sync();
+
         if ( $result['success'] ) {
             wp_send_json_success( $result );
         } else {
@@ -408,6 +411,9 @@ class Woo_Nalda_Sync_Admin {
             
             $result = $this->order_sync->run_sync( $range, Woo_Nalda_Sync_Logger::TRIGGER_MANUAL );
 
+            // Verify cron is still scheduled after manual sync.
+            $this->verify_cron_after_sync();
+
             if ( $result['success'] ) {
                 wp_send_json_success( $result );
             } else {
@@ -417,6 +423,35 @@ class Woo_Nalda_Sync_Admin {
             wp_send_json_error( array( 
                 'message' => sprintf( __( 'Error: %s', 'woo-nalda-sync' ), $e->getMessage() ),
             ) );
+        }
+    }
+
+    /**
+     * Verify and repair cron schedules after manual sync.
+     * This ensures that manual sync operations don't inadvertently
+     * break the scheduled sync functionality.
+     */
+    private function verify_cron_after_sync() {
+        $settings = woo_nalda_sync()->get_setting();
+        $needs_reschedule = false;
+
+        // Check product sync schedule.
+        if ( ! empty( $settings['product_sync_enabled'] ) && 'yes' === $settings['product_sync_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_product_sync' ) ) {
+                $needs_reschedule = true;
+            }
+        }
+
+        // Check order sync schedule.
+        if ( ! empty( $settings['order_sync_enabled'] ) && 'yes' === $settings['order_sync_enabled'] ) {
+            if ( ! wp_next_scheduled( 'woo_nalda_sync_order_sync' ) ) {
+                $needs_reschedule = true;
+            }
+        }
+
+        // Reschedule if needed.
+        if ( $needs_reschedule ) {
+            woo_nalda_sync()->reschedule_cron_events( $settings );
         }
     }
 
