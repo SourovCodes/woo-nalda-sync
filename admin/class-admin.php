@@ -86,6 +86,10 @@ class Woo_Nalda_Sync_Admin {
         add_action( 'wp_ajax_woo_nalda_sync_get_sync_logs', array( $this, 'ajax_get_sync_logs' ) );
         add_action( 'wp_ajax_woo_nalda_sync_clear_sync_logs', array( $this, 'ajax_clear_sync_logs' ) );
 
+        // Plugin update AJAX handlers.
+        add_action( 'wp_ajax_woo_nalda_sync_check_update', array( $this, 'ajax_check_update' ) );
+        add_action( 'wp_ajax_woo_nalda_sync_run_update', array( $this, 'ajax_run_update' ) );
+
         // Plugin action links.
         add_filter( 'plugin_action_links_' . WOO_NALDA_SYNC_PLUGIN_BASENAME, array( $this, 'plugin_action_links' ) );
 
@@ -221,6 +225,18 @@ class Woo_Nalda_Sync_Admin {
                 'orderImport'       => __( 'Order Import', 'woo-nalda-sync' ),
                 'triggerManual'     => __( 'Manual', 'woo-nalda-sync' ),
                 'triggerAutomatic'  => __( 'Automatic', 'woo-nalda-sync' ),
+                // Update strings.
+                'checkingUpdate'    => __( 'Checking for updates...', 'woo-nalda-sync' ),
+                'checkUpdate'       => __( 'Check for Updates', 'woo-nalda-sync' ),
+                'updateAvailable'   => __( 'Update Available', 'woo-nalda-sync' ),
+                'noUpdateAvailable' => __( 'You are running the latest version.', 'woo-nalda-sync' ),
+                'updating'          => __( 'Updating...', 'woo-nalda-sync' ),
+                'updateNow'         => __( 'Update Now', 'woo-nalda-sync' ),
+                'updateSuccess'     => __( 'Plugin updated successfully! Reloading...', 'woo-nalda-sync' ),
+                'updateError'       => __( 'Update failed. Please try again or update manually.', 'woo-nalda-sync' ),
+                'currentVersion'    => __( 'Current Version', 'woo-nalda-sync' ),
+                'latestVersion'     => __( 'Latest Version', 'woo-nalda-sync' ),
+                'releaseNotes'      => __( 'Release Notes', 'woo-nalda-sync' ),
             ),
         ) );
     }
@@ -802,5 +818,89 @@ class Woo_Nalda_Sync_Admin {
             <?php endif; ?>
         </div>
         <?php
+    }
+
+    /**
+     * AJAX: Check for plugin updates.
+     */
+    public function ajax_check_update() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'woo-nalda-sync' ) ) );
+        }
+
+        $updater = woo_nalda_sync()->updater;
+
+        if ( ! $updater ) {
+            wp_send_json_error( array( 'message' => __( 'Update system not available.', 'woo-nalda-sync' ) ) );
+        }
+
+        $result = $updater->force_check_update();
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
+    }
+
+    /**
+     * AJAX: Run plugin update.
+     */
+    public function ajax_run_update() {
+        check_ajax_referer( 'woo_nalda_sync_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'update_plugins' ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to update plugins.', 'woo-nalda-sync' ) ) );
+        }
+
+        // Get the updater instance.
+        $updater = woo_nalda_sync()->updater;
+
+        if ( ! $updater ) {
+            wp_send_json_error( array( 'message' => __( 'Update system not available.', 'woo-nalda-sync' ) ) );
+        }
+
+        // Force check for update to get latest info.
+        $update_info = $updater->force_check_update();
+
+        if ( ! $update_info['success'] || ! $update_info['update_available'] ) {
+            wp_send_json_error( array( 'message' => __( 'No update available.', 'woo-nalda-sync' ) ) );
+        }
+
+        // Include necessary files for WordPress upgrade.
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+
+        // Create a custom skin to capture output.
+        $skin = new \WP_Ajax_Upgrader_Skin();
+
+        // Create the upgrader.
+        $upgrader = new \Plugin_Upgrader( $skin );
+
+        // Clear update cache to ensure fresh data.
+        delete_site_transient( 'update_plugins' );
+        wp_update_plugins();
+
+        // Run the upgrade.
+        $result = $upgrader->upgrade( WOO_NALDA_SYNC_PLUGIN_BASENAME );
+
+        if ( is_wp_error( $result ) ) {
+            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+        }
+
+        if ( $result === false ) {
+            $messages = $skin->get_upgrade_messages();
+            $error_message = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Update failed. Please try again.', 'woo-nalda-sync' );
+            wp_send_json_error( array( 'message' => $error_message ) );
+        }
+
+        wp_send_json_success( array(
+            'message' => __( 'Plugin updated successfully!', 'woo-nalda-sync' ),
+            'reload'  => true,
+        ) );
     }
 }

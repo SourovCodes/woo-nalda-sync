@@ -878,6 +878,191 @@
     };
 
     /**
+     * Plugin Update Manager
+     */
+    const UpdateManager = {
+        init: function () {
+            this.bindEvents();
+        },
+
+        bindEvents: function () {
+            $(document).on('click', '#wns-check-update', this.checkUpdate.bind(this));
+            $(document).on('click', '#wns-run-update', this.runUpdate.bind(this));
+        },
+
+        checkUpdate: function (e) {
+            e.preventDefault();
+
+            const $button = $('#wns-check-update');
+            setButtonLoading($button, true, wooNaldaSync.strings.checkingUpdate || 'Checking...');
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_check_update',
+                    nonce: wooNaldaSync.nonce
+                },
+                success: function (response) {
+                    setButtonLoading($button, false);
+
+                    if (response.success) {
+                        UpdateManager.renderUpdateStatus(response.data);
+
+                        if (response.data.update_available) {
+                            Toast.info(response.data.message || (wooNaldaSync.strings.updateAvailable || 'Update available!'));
+                        } else {
+                            Toast.success(response.data.message || (wooNaldaSync.strings.noUpdateAvailable || 'You are running the latest version.'));
+                        }
+                    } else {
+                        Toast.error(response.data.message || 'Failed to check for updates.');
+                    }
+                },
+                error: function () {
+                    setButtonLoading($button, false);
+                    Toast.error('Connection error. Please try again.');
+                }
+            });
+        },
+
+        runUpdate: function (e) {
+            e.preventDefault();
+
+            const $button = $('#wns-run-update');
+
+            if (!confirm('Are you sure you want to update the plugin? Make sure you have a backup.')) {
+                return;
+            }
+
+            setButtonLoading($button, true, wooNaldaSync.strings.updating || 'Updating...');
+
+            $.ajax({
+                url: wooNaldaSync.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'woo_nalda_sync_run_update',
+                    nonce: wooNaldaSync.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Toast.success(wooNaldaSync.strings.updateSuccess || 'Plugin updated successfully! Reloading...');
+
+                        // Reload the page after a short delay.
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        setButtonLoading($button, false);
+                        Toast.error(response.data.message || (wooNaldaSync.strings.updateError || 'Update failed.'));
+                    }
+                },
+                error: function () {
+                    setButtonLoading($button, false);
+                    Toast.error(wooNaldaSync.strings.updateError || 'Update failed. Please try again or update manually.');
+                }
+            });
+        },
+
+        renderUpdateStatus: function (data) {
+            const $container = $('#wns-update-status');
+
+            if (!$container.length) {
+                return;
+            }
+
+            let html = '';
+
+            // Current version row.
+            html += '<div class="wns-settings-row" style="border-bottom: none;">' +
+                '<div class="wns-settings-row-info">' +
+                '<div class="wns-settings-row-label">' + (wooNaldaSync.strings.currentVersion || 'Current Version') + '</div>' +
+                '<p class="wns-settings-row-desc">The version of the plugin currently installed.</p>' +
+                '</div>' +
+                '<div class="wns-settings-row-control">' +
+                '<span class="wns-version-badge wns-badge wns-badge-info">v' + data.current_version + '</span>' +
+                '</div>' +
+                '</div>';
+
+            if (data.update_available) {
+                // Update available notice.
+                html += '<div class="wns-alert wns-alert-info" style="margin: 0 0 20px 0;">' +
+                    '<span class="wns-alert-icon dashicons dashicons-info"></span>' +
+                    '<div class="wns-alert-content">' +
+                    '<div class="wns-alert-title">Version ' + data.latest_version + ' is available!</div>' +
+                    '<p class="wns-alert-message">A new version of WooCommerce Nalda Sync is available. Update now to get the latest features and improvements.</p>' +
+                    '</div>' +
+                    '</div>';
+
+                // Latest version row.
+                let releaseDateText = '';
+                if (data.published_at) {
+                    const releaseDate = new Date(data.published_at);
+                    releaseDateText = 'Released on ' + releaseDate.toLocaleDateString();
+                }
+
+                html += '<div class="wns-settings-row" style="border-bottom: none;">' +
+                    '<div class="wns-settings-row-info">' +
+                    '<div class="wns-settings-row-label">' + (wooNaldaSync.strings.latestVersion || 'Latest Version') + '</div>' +
+                    '<p class="wns-settings-row-desc">' + releaseDateText + '</p>' +
+                    '</div>' +
+                    '<div class="wns-settings-row-control">' +
+                    '<span class="wns-version-badge wns-badge wns-badge-success">v' + data.latest_version + '</span>' +
+                    '</div>' +
+                    '</div>';
+
+                // Release notes.
+                if (data.release_notes) {
+                    const escapedNotes = $('<div>').text(data.release_notes).html().replace(/\n/g, '<br>');
+                    html += '<div class="wns-release-notes" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px;">' +
+                        '<h4 style="margin: 0 0 10px 0; font-size: 13px;">' +
+                        '<span class="dashicons dashicons-editor-ul" style="font-size: 16px; vertical-align: middle;"></span> ' +
+                        (wooNaldaSync.strings.releaseNotes || 'Release Notes') +
+                        '</h4>' +
+                        '<div class="wns-release-notes-content" style="font-size: 13px; color: #50575e; max-height: 150px; overflow-y: auto;">' +
+                        escapedNotes +
+                        '</div>' +
+                        '</div>';
+                }
+
+                // Update actions.
+                html += '<div class="wns-update-actions" style="margin-top: 20px; display: flex; gap: 10px;">' +
+                    '<button type="button" class="wns-btn wns-btn-primary" id="wns-run-update">' +
+                    '<span class="dashicons dashicons-update"></span> ' +
+                    (wooNaldaSync.strings.updateNow || 'Update Now') +
+                    '</button>';
+
+                if (data.release_url) {
+                    html += '<a href="' + data.release_url + '" class="wns-btn wns-btn-secondary" target="_blank">' +
+                        '<span class="dashicons dashicons-external"></span> View on GitHub' +
+                        '</a>';
+                }
+
+                html += '</div>';
+            } else {
+                // No update available.
+                html += '<div class="wns-settings-row" style="border-bottom: none;">' +
+                    '<div class="wns-settings-row-info">' +
+                    '<div class="wns-settings-row-label">Status</div>' +
+                    '</div>' +
+                    '<div class="wns-settings-row-control">' +
+                    '<span class="wns-badge wns-badge-success">' +
+                    '<span class="dashicons dashicons-yes" style="font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom;"></span> ' +
+                    'Up to date' +
+                    '</span>' +
+                    '</div>' +
+                    '</div>';
+
+                html += '<p class="wns-info-note" style="margin-top: 10px;">' +
+                    '<span class="dashicons dashicons-info"></span> ' +
+                    (wooNaldaSync.strings.noUpdateAvailable || 'You are running the latest version of WooCommerce Nalda Sync.') +
+                    '</p>';
+            }
+
+            $container.html(html);
+        }
+    };
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function () {
@@ -887,6 +1072,7 @@
         ToggleSwitches.init();
         UploadHistoryManager.init();
         SyncLogsManager.init();
+        UpdateManager.init();
 
         // Restore active tab
         SettingsManager.restoreActiveTab();

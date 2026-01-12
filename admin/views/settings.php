@@ -9,6 +9,10 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+// Get update info.
+$updater     = woo_nalda_sync()->updater;
+$update_info = $updater ? $updater->get_update_info() : false;
 ?>
 
 <div class="wns-wrap">
@@ -54,6 +58,122 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
     <?php endif; ?>
+
+    <!-- Plugin Update Section -->
+    <div class="wns-card" id="wns-update-section">
+        <div class="wns-card-header">
+            <h2>
+                <span class="dashicons dashicons-update"></span>
+                <?php esc_html_e( 'Plugin Updates', 'woo-nalda-sync' ); ?>
+            </h2>
+            <button type="button" class="wns-btn wns-btn-secondary wns-btn-sm" id="wns-check-update">
+                <span class="dashicons dashicons-image-rotate"></span>
+                <?php esc_html_e( 'Check for Updates', 'woo-nalda-sync' ); ?>
+            </button>
+        </div>
+        <div class="wns-card-body">
+            <div class="wns-update-info">
+                <div class="wns-update-status" id="wns-update-status">
+                    <div class="wns-settings-row" style="border-bottom: none;">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Current Version', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'The version of the plugin currently installed.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <span class="wns-version-badge wns-badge wns-badge-info">
+                                <?php echo esc_html( 'v' . WOO_NALDA_SYNC_VERSION ); ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <?php if ( $update_info ) : ?>
+                        <!-- Update Available Notice -->
+                        <div class="wns-alert wns-alert-info" style="margin: 0 0 20px 0;">
+                            <span class="wns-alert-icon dashicons dashicons-info"></span>
+                            <div class="wns-alert-content">
+                                <div class="wns-alert-title">
+                                    <?php 
+                                    printf( 
+                                        /* translators: %s: New version number */
+                                        esc_html__( 'Version %s is available!', 'woo-nalda-sync' ), 
+                                        esc_html( $update_info['new_version'] ) 
+                                    ); 
+                                    ?>
+                                </div>
+                                <p class="wns-alert-message">
+                                    <?php esc_html_e( 'A new version of WooCommerce Nalda Sync is available. Update now to get the latest features and improvements.', 'woo-nalda-sync' ); ?>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="wns-settings-row" style="border-bottom: none;">
+                            <div class="wns-settings-row-info">
+                                <div class="wns-settings-row-label"><?php esc_html_e( 'Latest Version', 'woo-nalda-sync' ); ?></div>
+                                <p class="wns-settings-row-desc">
+                                    <?php 
+                                    if ( ! empty( $update_info['published_at'] ) ) {
+                                        printf(
+                                            /* translators: %s: Release date */
+                                            esc_html__( 'Released on %s', 'woo-nalda-sync' ),
+                                            esc_html( wp_date( get_option( 'date_format' ), strtotime( $update_info['published_at'] ) ) )
+                                        );
+                                    }
+                                    ?>
+                                </p>
+                            </div>
+                            <div class="wns-settings-row-control">
+                                <span class="wns-version-badge wns-badge wns-badge-success">
+                                    <?php echo esc_html( 'v' . $update_info['new_version'] ); ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <?php if ( ! empty( $update_info['release_notes'] ) ) : ?>
+                            <div class="wns-release-notes" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                                <h4 style="margin: 0 0 10px 0; font-size: 13px;">
+                                    <span class="dashicons dashicons-editor-ul" style="font-size: 16px; vertical-align: middle;"></span>
+                                    <?php esc_html_e( 'Release Notes', 'woo-nalda-sync' ); ?>
+                                </h4>
+                                <div class="wns-release-notes-content" style="font-size: 13px; color: #50575e; max-height: 150px; overflow-y: auto;">
+                                    <?php echo wp_kses_post( nl2br( esc_html( $update_info['release_notes'] ) ) ); ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="wns-update-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button type="button" class="wns-btn wns-btn-primary" id="wns-run-update">
+                                <span class="dashicons dashicons-update"></span>
+                                <?php esc_html_e( 'Update Now', 'woo-nalda-sync' ); ?>
+                            </button>
+                            <?php if ( ! empty( $update_info['release_url'] ) ) : ?>
+                                <a href="<?php echo esc_url( $update_info['release_url'] ); ?>" class="wns-btn wns-btn-secondary" target="_blank">
+                                    <span class="dashicons dashicons-external"></span>
+                                    <?php esc_html_e( 'View on GitHub', 'woo-nalda-sync' ); ?>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php else : ?>
+                        <!-- No Update Available -->
+                        <div class="wns-settings-row" style="border-bottom: none;">
+                            <div class="wns-settings-row-info">
+                                <div class="wns-settings-row-label"><?php esc_html_e( 'Status', 'woo-nalda-sync' ); ?></div>
+                            </div>
+                            <div class="wns-settings-row-control">
+                                <span class="wns-badge wns-badge-success">
+                                    <span class="dashicons dashicons-yes" style="font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom;"></span>
+                                    <?php esc_html_e( 'Up to date', 'woo-nalda-sync' ); ?>
+                                </span>
+                            </div>
+                        </div>
+                        <p class="wns-info-note" style="margin-top: 10px;">
+                            <span class="dashicons dashicons-info"></span>
+                            <?php esc_html_e( 'You are running the latest version of WooCommerce Nalda Sync.', 'woo-nalda-sync' ); ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Settings Form -->
     <form id="wns-settings-form" method="post" action="">

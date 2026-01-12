@@ -1,0 +1,136 @@
+name: Release Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'woo-nalda-sync.php'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.check.outputs.version_changed }}
+      new_version: ${{ steps.check.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check
+        run: |
+          # Get current version from main plugin file
+          CURRENT_VERSION=$(grep -Po "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" woo-nalda-sync.php | head -1)
+          
+          # Get previous version
+          git show HEAD~1:woo-nalda-sync.php > /tmp/previous.php 2>/dev/null || echo ""
+          PREVIOUS_VERSION=$(grep -Po "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" /tmp/previous.php 2>/dev/null | head -1 || echo "0.0.0")
+          
+          echo "Current version: $CURRENT_VERSION"
+          echo "Previous version: $PREVIOUS_VERSION"
+          
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ] && [ -n "$CURRENT_VERSION" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+            echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "Version unchanged"
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    needs: check-version
+    if: needs.check-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version and changelog
+        id: version
+        run: |
+          VERSION="${{ needs.check-version.outputs.new_version }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Try to extract changelog from readme or create default
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract changelog for this version
+            CHANGELOG=$(awk "/^## \[$VERSION\]|^## $VERSION/{flag=1; next} /^## \[?[0-9]+\.[0-9]+\.[0-9]+\]?/{flag=0} flag" CHANGELOG.md)
+          fi
+          
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release version $VERSION"
+          fi
+          
+          # Save changelog to file for multiline output
+          echo "$CHANGELOG" > /tmp/changelog.txt
+          echo "changelog_file=/tmp/changelog.txt" >> $GITHUB_OUTPUT
+
+      - name: Create plugin zip
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PLUGIN_SLUG="woo-nalda-sync"
+          
+          # Create build directory
+          mkdir -p build/$PLUGIN_SLUG
+          
+          # Copy plugin files (excluding dev files)
+          rsync -av --progress . build/$PLUGIN_SLUG \
+            --exclude 'build' \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.gitignore' \
+            --exclude 'node_modules' \
+            --exclude 'vendor' \
+            --exclude 'tests' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude '*.log' \
+            --exclude 'composer.json' \
+            --exclude 'composer.lock' \
+            --exclude 'package.json' \
+            --exclude 'package-lock.json' \
+            --exclude 'phpcs.xml' \
+            --exclude 'phpunit.xml' \
+            --exclude '.editorconfig' \
+            --exclude '.eslintrc*' \
+            --exclude '.prettierrc*' \
+            --exclude 'webpack.config.js' \
+            --exclude 'Gruntfile.js' \
+            --exclude 'gulpfile.js' \
+            --exclude '*.md' \
+            --exclude 'dev/'
+          
+          # Create zip file
+          cd build
+          zip -r ../${PLUGIN_SLUG}-${VERSION}.zip $PLUGIN_SLUG
+          cd ..
+          
+          echo "Created ${PLUGIN_SLUG}-${VERSION}.zip"
+          ls -la *.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: WooCommerce Nalda Sync v${{ steps.version.outputs.version }}
+          body_path: ${{ steps.version.outputs.changelog_file }}
+          draft: false
+          prerelease: false
+          files: |
+            woo-nalda-sync-${{ steps.version.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** woo-nalda-sync-${{ steps.version.outputs.version }}.zip" >> $GITHUB_STEP_SUMMARY
