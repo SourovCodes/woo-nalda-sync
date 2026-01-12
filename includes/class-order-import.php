@@ -581,6 +581,34 @@ class Woo_Nalda_Sync_Order_Import {
                 $order->update_meta_data( '_nalda_collection_name', $nalda_order['collectionName'] );
             }
 
+            // Store delivery status (state) from the first item (or first non-empty one).
+            // This will be used for order status export.
+            $first_delivery_status = '';
+            $first_delivery_date   = '';
+            foreach ( $order_items as $item ) {
+                if ( ! empty( $item['deliveryStatus'] ) && empty( $first_delivery_status ) ) {
+                    $first_delivery_status = $item['deliveryStatus'];
+                }
+                if ( ! empty( $item['deliveryDatePlanned'] ) && empty( $first_delivery_date ) ) {
+                    $first_delivery_date = $item['deliveryDatePlanned'];
+                }
+                if ( ! empty( $first_delivery_status ) && ! empty( $first_delivery_date ) ) {
+                    break;
+                }
+            }
+
+            // Set Nalda delivery fields if available from API.
+            if ( ! empty( $first_delivery_status ) ) {
+                $order->update_meta_data( '_nalda_state', $first_delivery_status );
+            }
+            if ( ! empty( $first_delivery_date ) ) {
+                // Convert to YYYY-MM-DD format for date input field.
+                $delivery_date_formatted = date( 'Y-m-d', strtotime( $first_delivery_date ) );
+                if ( $delivery_date_formatted && $delivery_date_formatted !== '1970-01-01' ) {
+                    $order->update_meta_data( '_nalda_expected_delivery_date', $delivery_date_formatted );
+                }
+            }
+
             // Add order note.
             $order->add_order_note(
                 sprintf(
@@ -754,6 +782,10 @@ class Woo_Nalda_Sync_Order_Import {
         $items_result = $this->fetch_order_items( $nalda_order['orderId'] );
         
         if ( $items_result['success'] && ! empty( $items_result['items'] ) ) {
+            // Track first delivery status and date for order-level update.
+            $first_delivery_status = '';
+            $first_delivery_date   = '';
+            
             // Update order item delivery statuses.
             $order_items = $order->get_items();
             
@@ -764,6 +796,14 @@ class Woo_Nalda_Sync_Order_Import {
                     // Find matching Nalda item.
                     foreach ( $items_result['items'] as $nalda_item ) {
                         if ( $nalda_item['gtin'] === $gtin ) {
+                            // Track first delivery status and date.
+                            if ( ! empty( $nalda_item['deliveryStatus'] ) && empty( $first_delivery_status ) ) {
+                                $first_delivery_status = $nalda_item['deliveryStatus'];
+                            }
+                            if ( ! empty( $nalda_item['deliveryDatePlanned'] ) && empty( $first_delivery_date ) ) {
+                                $first_delivery_date = $nalda_item['deliveryDatePlanned'];
+                            }
+                            
                             // Update delivery status.
                             $old_status = $order_item->get_meta( '_nalda_delivery_status' );
                             $new_status = isset( $nalda_item['deliveryStatus'] ) ? $nalda_item['deliveryStatus'] : '';
@@ -802,6 +842,45 @@ class Woo_Nalda_Sync_Order_Import {
                             
                             break;
                         }
+                    }
+                }
+            }
+            
+            // Update order-level Nalda state from API if changed.
+            if ( ! empty( $first_delivery_status ) ) {
+                $current_state = $order->get_meta( '_nalda_state' );
+                if ( $current_state !== $first_delivery_status ) {
+                    $order->update_meta_data( '_nalda_state', $first_delivery_status );
+                    $order->add_order_note(
+                        sprintf(
+                            __( 'Nalda state updated: %s → %s', 'woo-nalda-sync' ),
+                            $current_state ?: 'None',
+                            $first_delivery_status
+                        ),
+                        false,
+                        true
+                    );
+                    $updated = true;
+                }
+            }
+            
+            // Update order-level expected delivery date from API if changed.
+            if ( ! empty( $first_delivery_date ) ) {
+                $delivery_date_formatted = date( 'Y-m-d', strtotime( $first_delivery_date ) );
+                if ( $delivery_date_formatted && $delivery_date_formatted !== '1970-01-01' ) {
+                    $current_date = $order->get_meta( '_nalda_expected_delivery_date' );
+                    if ( $current_date !== $delivery_date_formatted ) {
+                        $order->update_meta_data( '_nalda_expected_delivery_date', $delivery_date_formatted );
+                        $order->add_order_note(
+                            sprintf(
+                                __( 'Expected delivery date updated: %s → %s', 'woo-nalda-sync' ),
+                                $current_date ?: 'None',
+                                $delivery_date_formatted
+                            ),
+                            false,
+                            true
+                        );
+                        $updated = true;
                     }
                 }
             }
@@ -1379,23 +1458,30 @@ class Woo_Nalda_Sync_Order_Import {
             return $rows;
         }
 
-        $wc_status = $order->get_status();
+        // Get state from order meta (set during import or manually in admin).
+        $nalda_state = $order->get_meta( '_nalda_state' );
+        
+        // If no state is set, fall back to mapping from WooCommerce status.
+        if ( empty( $nalda_state ) ) {
+            $wc_status   = $order->get_status();
+            $nalda_state = $this->map_order_status_to_nalda_state( $wc_status, '' );
+        }
 
-        // Get expected delivery date from order meta or calculate from now.
+        // Get expected delivery date from order meta.
         $expected_delivery = $order->get_meta( '_nalda_expected_delivery_date' );
-        if ( empty( $expected_delivery ) ) {
+        if ( ! empty( $expected_delivery ) ) {
+            // Format to dd.mm.yy for Nalda CSV.
+            $expected_delivery = wp_date( 'd.m.y', strtotime( $expected_delivery ) );
+        } else {
             // Default to order date + 3 days if not set.
             $order_date        = $order->get_date_created();
             $expected_delivery = $order_date ? $order_date->modify( '+3 days' )->format( 'd.m.y' ) : wp_date( 'd.m.y', strtotime( '+3 days' ) );
-        } else {
-            // Format to dd.mm.yy if it's a different format.
-            $expected_delivery = wp_date( 'd.m.y', strtotime( $expected_delivery ) );
         }
 
         // Get tracking code from order meta.
         $tracking_code = $order->get_meta( '_nalda_tracking_code' );
         if ( empty( $tracking_code ) ) {
-            // Try common tracking meta keys.
+            // Try common tracking meta keys as fallback.
             $tracking_keys = array( '_tracking_number', '_tracking_code', 'tracking_number', 'tracking_code' );
             foreach ( $tracking_keys as $key ) {
                 $tracking_code = $order->get_meta( $key );
@@ -1416,14 +1502,10 @@ class Woo_Nalda_Sync_Order_Import {
                 continue;
             }
 
-            // Get item-specific delivery status if available.
-            $item_delivery_status = $item->get_meta( '_nalda_delivery_status' );
-            $state = $this->map_order_status_to_nalda_state( $wc_status, $item_delivery_status );
-
             $rows[] = array(
                 'orderId'              => $nalda_order_id,
                 'gtin'                 => $gtin,
-                'state'                => $state,
+                'state'                => $nalda_state,
                 'expectedDeliveryDate' => $expected_delivery,
                 'trackingCode'         => $tracking_code ?: '',
             );

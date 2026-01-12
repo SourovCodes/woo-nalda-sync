@@ -96,6 +96,11 @@ class Woo_Nalda_Sync_Admin {
 
         // Order meta box for Nalda commission (admin only).
         add_action( 'add_meta_boxes', array( $this, 'add_nalda_order_meta_box' ) );
+        
+        // Save Nalda delivery fields when order is saved.
+        add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_nalda_delivery_fields' ), 10, 1 );
+        // For HPOS.
+        add_action( 'woocommerce_before_order_object_save', array( $this, 'save_nalda_delivery_fields_hpos' ), 10, 1 );
     }
 
     /**
@@ -897,8 +902,146 @@ class Woo_Nalda_Sync_Admin {
                 <span class="wns-order-meta-value" style="font-size: 11px; color: #646970;"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $imported_at ) ) ); ?></span>
             </div>
             <?php endif; ?>
+
+            <hr class="wns-order-meta-divider">
+            <p style="margin: 12px 12px 8px; font-weight: 600; color: #1d2327; font-size: 12px;">
+                <?php esc_html_e( 'Delivery Information', 'woo-nalda-sync' ); ?>
+            </p>
+
+            <?php
+            // Get delivery fields.
+            $nalda_state                  = $order->get_meta( '_nalda_state' );
+            $nalda_expected_delivery_date = $order->get_meta( '_nalda_expected_delivery_date' );
+            $nalda_tracking_code          = $order->get_meta( '_nalda_tracking_code' );
+
+            // Available Nalda states.
+            $nalda_states = array(
+                ''                 => __( '-- Select State --', 'woo-nalda-sync' ),
+                'IN_PREPARATION'   => __( 'In Preparation', 'woo-nalda-sync' ),
+                'IN_DELIVERY'      => __( 'In Delivery', 'woo-nalda-sync' ),
+                'DELIVERED'        => __( 'Delivered', 'woo-nalda-sync' ),
+                'UNDELIVERABLE'    => __( 'Undeliverable', 'woo-nalda-sync' ),
+                'CANCELLED'        => __( 'Cancelled', 'woo-nalda-sync' ),
+                'READY_TO_COLLECT' => __( 'Ready to Collect', 'woo-nalda-sync' ),
+                'COLLECTED'        => __( 'Collected', 'woo-nalda-sync' ),
+                'NOT_PICKED_UP'    => __( 'Not Picked Up', 'woo-nalda-sync' ),
+                'RETURNED'         => __( 'Returned', 'woo-nalda-sync' ),
+                'DISPUTE'          => __( 'Dispute', 'woo-nalda-sync' ),
+            );
+
+            wp_nonce_field( 'woo_nalda_sync_delivery_fields', 'woo_nalda_sync_delivery_nonce' );
+            ?>
+
+            <div class="wns-order-meta-row" style="flex-direction: column; gap: 4px;">
+                <label class="wns-order-meta-label" for="_nalda_state"><?php esc_html_e( 'State', 'woo-nalda-sync' ); ?></label>
+                <select name="_nalda_state" id="_nalda_state" style="width: 100%;">
+                    <?php foreach ( $nalda_states as $value => $label ) : ?>
+                        <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $nalda_state, $value ); ?>>
+                            <?php echo esc_html( $label ); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="wns-order-meta-row" style="flex-direction: column; gap: 4px;">
+                <label class="wns-order-meta-label" for="_nalda_expected_delivery_date"><?php esc_html_e( 'Expected Delivery Date', 'woo-nalda-sync' ); ?></label>
+                <input type="date" name="_nalda_expected_delivery_date" id="_nalda_expected_delivery_date" value="<?php echo esc_attr( $nalda_expected_delivery_date ); ?>" style="width: 100%;">
+            </div>
+
+            <div class="wns-order-meta-row" style="flex-direction: column; gap: 4px;">
+                <label class="wns-order-meta-label" for="_nalda_tracking_code"><?php esc_html_e( 'Tracking Code', 'woo-nalda-sync' ); ?></label>
+                <input type="text" name="_nalda_tracking_code" id="_nalda_tracking_code" value="<?php echo esc_attr( $nalda_tracking_code ); ?>" style="width: 100%;" placeholder="<?php esc_attr_e( 'Enter tracking code', 'woo-nalda-sync' ); ?>">
+            </div>
         </div>
         <?php
+    }
+
+    /**
+     * Save Nalda delivery fields when order is saved (legacy).
+     *
+     * @param int $order_id Order ID.
+     */
+    public function save_nalda_delivery_fields( $order_id ) {
+        // Verify nonce.
+        if ( ! isset( $_POST['woo_nalda_sync_delivery_nonce'] ) || ! wp_verify_nonce( $_POST['woo_nalda_sync_delivery_nonce'], 'woo_nalda_sync_delivery_fields' ) ) {
+            return;
+        }
+
+        // Check permission.
+        if ( ! current_user_can( 'edit_shop_orders' ) ) {
+            return;
+        }
+
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return;
+        }
+
+        // Only save for Nalda orders.
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+        if ( empty( $nalda_order_id ) ) {
+            return;
+        }
+
+        // Save state.
+        if ( isset( $_POST['_nalda_state'] ) ) {
+            $order->update_meta_data( '_nalda_state', sanitize_text_field( $_POST['_nalda_state'] ) );
+        }
+
+        // Save expected delivery date.
+        if ( isset( $_POST['_nalda_expected_delivery_date'] ) ) {
+            $order->update_meta_data( '_nalda_expected_delivery_date', sanitize_text_field( $_POST['_nalda_expected_delivery_date'] ) );
+        }
+
+        // Save tracking code.
+        if ( isset( $_POST['_nalda_tracking_code'] ) ) {
+            $order->update_meta_data( '_nalda_tracking_code', sanitize_text_field( $_POST['_nalda_tracking_code'] ) );
+        }
+
+        $order->save();
+    }
+
+    /**
+     * Save Nalda delivery fields when order is saved (HPOS).
+     *
+     * @param WC_Order $order Order object.
+     */
+    public function save_nalda_delivery_fields_hpos( $order ) {
+        // Only process in admin context with POST data.
+        if ( ! is_admin() || empty( $_POST ) ) {
+            return;
+        }
+
+        // Verify nonce.
+        if ( ! isset( $_POST['woo_nalda_sync_delivery_nonce'] ) || ! wp_verify_nonce( $_POST['woo_nalda_sync_delivery_nonce'], 'woo_nalda_sync_delivery_fields' ) ) {
+            return;
+        }
+
+        // Check permission.
+        if ( ! current_user_can( 'edit_shop_orders' ) ) {
+            return;
+        }
+
+        // Only save for Nalda orders.
+        $nalda_order_id = $order->get_meta( '_nalda_order_id' );
+        if ( empty( $nalda_order_id ) ) {
+            return;
+        }
+
+        // Save state.
+        if ( isset( $_POST['_nalda_state'] ) ) {
+            $order->update_meta_data( '_nalda_state', sanitize_text_field( $_POST['_nalda_state'] ) );
+        }
+
+        // Save expected delivery date.
+        if ( isset( $_POST['_nalda_expected_delivery_date'] ) ) {
+            $order->update_meta_data( '_nalda_expected_delivery_date', sanitize_text_field( $_POST['_nalda_expected_delivery_date'] ) );
+        }
+
+        // Save tracking code.
+        if ( isset( $_POST['_nalda_tracking_code'] ) ) {
+            $order->update_meta_data( '_nalda_tracking_code', sanitize_text_field( $_POST['_nalda_tracking_code'] ) );
+        }
     }
 
     /**
