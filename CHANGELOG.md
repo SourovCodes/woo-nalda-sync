@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.6] - 2026-01-13
 
+### Removed
+- Removed unused "Create Customer Accounts" setting (Nalda orders always use Nalda as the billing customer, not end buyers)
+
 ### Fixed
 - Added missing SFTP error codes (`CONNECTION_RESET`, `PROTOCOL_ERROR`) for better error handling
+- Fixed logs page to display all 3 sync types: Product Export, Order Import, and Order Status Export
 
 ## [1.0.5] - 2026-01-13
 

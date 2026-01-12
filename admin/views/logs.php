@@ -77,6 +77,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <span class="wns-badge wns-badge-purple"><?php esc_html_e( 'Order Import', 'woo-nalda-sync' ); ?></span>
                             <span class="wns-legend-desc"><?php esc_html_e( 'Orders imported from Nalda', 'woo-nalda-sync' ); ?></span>
                         </div>
+                        <div class="wns-legend-item">
+                            <span class="wns-badge wns-badge-warning"><?php esc_html_e( 'Order Status Export', 'woo-nalda-sync' ); ?></span>
+                            <span class="wns-legend-desc"><?php esc_html_e( 'Order statuses exported to Nalda', 'woo-nalda-sync' ); ?></span>
+                        </div>
                     </div>
                 </div>
                 <div class="wns-legend-section">

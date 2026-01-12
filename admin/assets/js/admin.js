@@ -874,10 +874,16 @@
                 '<tbody>';
 
             logs.forEach(function (log) {
-                const typeClass = log.type === 'product_export' ? 'wns-badge-info' : 'wns-badge-purple';
-                const typeLabel = log.type === 'product_export'
-                    ? (wooNaldaSync.strings.productExport || 'Product Export')
-                    : (wooNaldaSync.strings.orderImport || 'Order Import');
+                let typeClass = 'wns-badge-purple';
+                let typeLabel = wooNaldaSync.strings.orderImport || 'Order Import';
+
+                if (log.type === 'product_export') {
+                    typeClass = 'wns-badge-info';
+                    typeLabel = wooNaldaSync.strings.productExport || 'Product Export';
+                } else if (log.type === 'order_status_export') {
+                    typeClass = 'wns-badge-warning';
+                    typeLabel = wooNaldaSync.strings.orderStatusExport || 'Order Status Export';
+                }
 
                 const triggerClass = log.trigger === 'manual' ? 'wns-badge-secondary' : 'wns-badge-default';
                 const triggerLabel = log.trigger === 'manual'

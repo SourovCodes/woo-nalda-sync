@@ -300,7 +300,6 @@ class Woo_Nalda_Sync_Admin {
             'order_import_schedule'    => isset( $data['order_import_schedule'] ) ? sanitize_text_field( $data['order_import_schedule'] ) : 'hourly',
             'order_import_range'     => isset( $data['order_import_range'] ) ? sanitize_text_field( $data['order_import_range'] ) : 'today',
             'order_reduce_stock'     => isset( $data['order_reduce_stock'] ) ? 'yes' : 'no',
-            'order_create_customers' => isset( $data['order_create_customers'] ) ? 'yes' : 'no',
             
             // Order Status Export Settings
             'order_status_export_enabled'  => isset( $data['order_status_export_enabled'] ) ? 'yes' : 'no',
