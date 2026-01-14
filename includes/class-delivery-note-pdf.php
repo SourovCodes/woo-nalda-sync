@@ -172,15 +172,9 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
         // Get Nalda order ID.
         $nalda_order_id = $order->get_meta( '_nalda_order_id' );
         
-        // Get site logo.
-        $logo_html = '';
-        $custom_logo_id = get_theme_mod( 'custom_logo' );
-        if ( $custom_logo_id ) {
-            $logo_url = wp_get_attachment_image_url( $custom_logo_id, 'medium' );
-            if ( $logo_url ) {
-                $logo_html = '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $store_name ) . '" style="max-height: 60px; max-width: 200px;">';
-            }
-        }
+        // Get Nalda logo.
+        $logo_url = plugins_url( 'admin/assets/images/nalda-logo.webp', dirname( __FILE__ ) );
+        $logo_html = '<img src="' . esc_url( $logo_url ) . '" alt="Nalda" style="max-height: 60px; max-width: 200px;">';
         
         // Build product rows.
         $items_html = '';
@@ -194,16 +188,9 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
             $total = $item->get_total();
             $grand_total += $total;
             
-            // Get measure unit (weight unit or 'pc' for pieces).
-            $measure_unit = __( 'pc', 'woo-nalda-sync' );
-            if ( $product && $product->has_weight() ) {
-                $measure_unit = get_option( 'woocommerce_weight_unit', 'kg' );
-            }
-            
             $items_html .= '<tr>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . $row_num . '</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">' . esc_html( $item->get_name() ) . '</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . esc_html( $measure_unit ) . '</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . $quantity . '</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price( $unit_price, array( 'currency' => $order->get_currency() ) ) . '</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price( $total, array( 'currency' => $order->get_currency() ) ) . '</td>
@@ -296,7 +283,6 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
                     <tr>
                         <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: center; width: 40px;">' . esc_html__( 'No', 'woo-nalda-sync' ) . '</th>
                         <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: left;">' . esc_html__( 'Description', 'woo-nalda-sync' ) . '</th>
-                        <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: center; width: 80px;">' . esc_html__( 'Measure unit', 'woo-nalda-sync' ) . '</th>
                         <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: center; width: 60px;">' . esc_html__( 'Quantity', 'woo-nalda-sync' ) . '</th>
                         <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: right; width: 90px;">' . esc_html__( 'Unit price', 'woo-nalda-sync' ) . '</th>
                         <th style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px 8px; text-align: right; width: 90px;">' . esc_html__( 'Total', 'woo-nalda-sync' ) . '</th>
@@ -337,22 +323,6 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
                 </tr>
             </table>
             
-            <!-- Signature Section -->
-            <table style="width: 100%; margin-top: 40px;">
-                <tr>
-                    <td style="width: 50%;">
-                        <p style="margin: 0 0 5px; font-weight: bold;">' . esc_html__( 'Received in good condition', 'woo-nalda-sync' ) . ':</p>
-                        <div style="border-bottom: 1px solid #333; width: 250px; height: 40px;"></div>
-                        <p style="margin: 5px 0 0; font-size: 10px; color: #666;">' . esc_html__( 'date, signature', 'woo-nalda-sync' ) . '</p>
-                    </td>
-                    <td style="width: 50%;">&#160;</td>
-                </tr>
-            </table>
-            
-            <!-- Thank You -->
-            <p style="text-align: center; margin-top: 40px; font-style: italic; color: #666;">
-                ' . esc_html__( 'Thank you for doing business with us!', 'woo-nalda-sync' ) . '
-            </p>
         </div>';
         
         return $html;
