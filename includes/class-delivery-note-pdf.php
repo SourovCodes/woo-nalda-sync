@@ -327,11 +327,7 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
                 <tr>
                     <td style="padding: 10px; width: 150px; background: #f5f5f5; font-weight: bold;">' . esc_html__( 'Delivery type', 'woo-nalda-sync' ) . ':</td>
                     <td style="padding: 10px;">
-                        <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'delivery service', 'woo-nalda-sync' ) . '
-                        &#160;&#160;&#160;
-                        <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'post', 'woo-nalda-sync' ) . '
-                        &#160;&#160;&#160;
-                        <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'self-collection', 'woo-nalda-sync' ) . '
+                        ' . $this->get_shipping_methods_html() . '
                     </td>
                 </tr>
             </table>
@@ -339,6 +335,55 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
         </div>';
         
         return $html;
+    }
+
+    /**
+     * Get shipping methods HTML from WooCommerce shipping zones.
+     *
+     * @return string HTML with shipping method checkboxes.
+     */
+    private function get_shipping_methods_html() {
+        $shipping_methods = array();
+        
+        // Get all shipping zones.
+        $zones = WC_Shipping_Zones::get_zones();
+        
+        // Add methods from each zone.
+        foreach ( $zones as $zone ) {
+            $zone_obj = new WC_Shipping_Zone( $zone['id'] );
+            $methods = $zone_obj->get_shipping_methods( true ); // true = only enabled methods
+            
+            foreach ( $methods as $method ) {
+                $method_title = $method->get_title();
+                if ( ! empty( $method_title ) && ! in_array( $method_title, $shipping_methods, true ) ) {
+                    $shipping_methods[] = $method_title;
+                }
+            }
+        }
+        
+        // Also get methods from "Rest of the World" zone (zone 0).
+        $zone_zero = new WC_Shipping_Zone( 0 );
+        $methods = $zone_zero->get_shipping_methods( true );
+        
+        foreach ( $methods as $method ) {
+            $method_title = $method->get_title();
+            if ( ! empty( $method_title ) && ! in_array( $method_title, $shipping_methods, true ) ) {
+                $shipping_methods[] = $method_title;
+            }
+        }
+        
+        // If no shipping methods found, return a placeholder.
+        if ( empty( $shipping_methods ) ) {
+            return '<span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'N/A', 'woo-nalda-sync' );
+        }
+        
+        // Build HTML for each shipping method.
+        $html_parts = array();
+        foreach ( $shipping_methods as $method_name ) {
+            $html_parts[] = '<span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html( $method_name );
+        }
+        
+        return implode( '&#160;&#160;&#160;', $html_parts );
     }
 
     /**
