@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2026-01-14
+
+### Added
+- Custom delivery note logo setting in Advanced Settings (with WordPress media uploader)
+- Nalda logo displayed below order info on delivery notes for Nalda orders
+- German (de_DE) translations for delivery note PDF
+- Dynamic shipping methods from WooCommerce shipping zones on delivery notes
+
+### Changed
+- Delivery note PDF now shows Nalda customer price (what the end client paid) instead of seller net price
+- Delivery note logo uses custom setting with fallback to store name text
+
+### Removed
+- Removed "Measure unit" column from delivery note PDF
+- Removed "Number of packages" field from delivery note PDF
+- Removed "Comments" field from delivery note PDF
+- Removed "Received in good condition" signature section from delivery note PDF
+- Removed "Thank you" message from delivery note PDF
+- Removed hardcoded delivery type options (now uses WooCommerce shipping methods)
+
 ## [1.0.6] - 2026-01-13
 
 ### Removed
