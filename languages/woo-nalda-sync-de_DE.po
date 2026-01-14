@@ -771,3 +771,53 @@ msgstr "Bestand wiederhergestellt für %s (+%d) - Bestellung %s"
 #, c-format
 msgid "Error: %s"
 msgstr "Fehler: %s"
+
+# Delivery Note PDF strings
+#, c-format
+msgid "Delivery Note #%s"
+msgstr "Lieferschein #%s"
+
+msgid "Delivery Note"
+msgstr "Lieferschein"
+
+msgid "Order"
+msgstr "Bestellung"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Seller"
+msgstr "Verkäufer"
+
+msgid "Buyer"
+msgstr "Käufer"
+
+msgid "via Nalda"
+msgstr "via Nalda"
+
+msgid "No"
+msgstr "Nr."
+
+msgid "Description"
+msgstr "Beschreibung"
+
+msgid "Quantity"
+msgstr "Menge"
+
+msgid "Unit price"
+msgstr "Stückpreis"
+
+msgid "Total"
+msgstr "Gesamt"
+
+msgid "Grand Total"
+msgstr "Gesamtsumme"
+
+msgid "Delivery type"
+msgstr "Lieferart"
+
+msgid "N/A"
+msgstr "N/A"
+
+msgid "Print / Save as PDF"
+msgstr "Drucken / Als PDF speichern"
