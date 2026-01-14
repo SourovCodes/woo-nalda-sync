@@ -182,10 +182,18 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
         $grand_total = 0;
         
         foreach ( $order->get_items() as $item ) {
-            $product = $item->get_product();
             $quantity = $item->get_quantity();
-            $unit_price = $item->get_total() / max( 1, $quantity );
-            $total = $item->get_total();
+            
+            // Use the customer price from Nalda (what the end client paid).
+            $customer_price = $item->get_meta( '_nalda_customer_price' );
+            if ( $customer_price ) {
+                $unit_price = floatval( $customer_price );
+                $total = $unit_price * $quantity;
+            } else {
+                // Fallback to order item price if Nalda customer price not available.
+                $unit_price = $item->get_total() / max( 1, $quantity );
+                $total = $item->get_total();
+            }
             $grand_total += $total;
             
             $items_html .= '<tr>
@@ -312,14 +320,6 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
                         &#160;&#160;&#160;
                         <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;">&#160;</span> ' . esc_html__( 'self-collection', 'woo-nalda-sync' ) . '
                     </td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px; background: #f5f5f5; font-weight: bold; border-top: 1px solid #ddd;">' . esc_html__( 'Number of packages', 'woo-nalda-sync' ) . ':</td>
-                    <td style="padding: 10px; border-top: 1px solid #ddd;">&#160;</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px; background: #f5f5f5; font-weight: bold; border-top: 1px solid #ddd;">' . esc_html__( 'Comments', 'woo-nalda-sync' ) . ':</td>
-                    <td style="padding: 10px; border-top: 1px solid #ddd; height: 50px;">&#160;</td>
                 </tr>
             </table>
             
