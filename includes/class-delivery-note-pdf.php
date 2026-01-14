@@ -184,17 +184,6 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
             }
         }
         
-        // Fallback to site logo if no custom logo is set.
-        if ( empty( $logo_html ) ) {
-            $custom_logo_id = get_theme_mod( 'custom_logo' );
-            if ( $custom_logo_id ) {
-                $logo_url = wp_get_attachment_image_url( $custom_logo_id, 'medium' );
-                if ( $logo_url ) {
-                    $logo_html = '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $store_name ) . '" style="max-height: 60px; max-width: 200px;">';
-                }
-            }
-        }
-        
         // Get Nalda logo.
         $nalda_logo_url = plugins_url( 'admin/assets/images/nalda-logo.webp', dirname( __FILE__ ) );
         $nalda_logo_html = '<img src="' . esc_url( $nalda_logo_url ) . '" alt="Nalda" style="max-height: 40px; max-width: 150px;">';

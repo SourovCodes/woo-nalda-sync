@@ -579,7 +579,7 @@ $update_info = $updater ? $updater->get_update_info() : false;
                     <div class="wns-settings-row">
                         <div class="wns-settings-row-info">
                             <div class="wns-settings-row-label"><?php esc_html_e( 'Delivery Note Logo', 'woo-nalda-sync' ); ?></div>
-                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Custom logo to display on delivery note PDFs. Leave empty to use your site logo.', 'woo-nalda-sync' ); ?></p>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Custom logo to display on delivery note PDFs.', 'woo-nalda-sync' ); ?></p>
                         </div>
                         <div class="wns-settings-row-control">
                             <?php
