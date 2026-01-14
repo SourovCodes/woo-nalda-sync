@@ -1165,6 +1165,9 @@ class Woo_Nalda_Sync_Admin {
     public function ajax_download_delivery_note() {
         // Get order ID from request.
         $order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
+        
+        // Get language from request.
+        $language = isset( $_GET['lang'] ) ? sanitize_text_field( wp_unslash( $_GET['lang'] ) ) : '';
 
         if ( ! $order_id ) {
             wp_die( __( 'Invalid order ID.', 'woo-nalda-sync' ) );
@@ -1199,8 +1202,8 @@ class Woo_Nalda_Sync_Admin {
             require_once WOO_NALDA_SYNC_PLUGIN_DIR . 'includes/class-delivery-note-pdf.php';
         }
 
-        // Generate and output PDF.
-        $pdf_generator = new Woo_Nalda_Sync_Delivery_Note_PDF( $order );
+        // Generate and output PDF with language parameter.
+        $pdf_generator = new Woo_Nalda_Sync_Delivery_Note_PDF( $order, $language );
         $pdf_generator->generate();
 
         // The generate() method exits, so this won't be reached.

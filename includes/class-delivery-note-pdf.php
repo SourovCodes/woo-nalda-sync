@@ -25,12 +25,40 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
     private $order;
 
     /**
+     * Language code for the PDF.
+     *
+     * @var string
+     */
+    private $language;
+
+    /**
      * Constructor.
      *
-     * @param WC_Order $order Order object.
+     * @param WC_Order $order    Order object.
+     * @param string   $language Language code (e.g., 'en_US', 'de_DE'). Default empty uses site language.
      */
-    public function __construct( $order ) {
-        $this->order = $order;
+    public function __construct( $order, $language = '' ) {
+        $this->order    = $order;
+        $this->language = $language;
+        
+        // Switch to the specified language if provided.
+        if ( ! empty( $this->language ) ) {
+            $this->switch_language( $this->language );
+        }
+    }
+
+    /**
+     * Switch to a specific language.
+     *
+     * @param string $locale The locale to switch to.
+     */
+    private function switch_language( $locale ) {
+        // Switch locale for translations.
+        switch_to_locale( $locale );
+        
+        // Reload text domain for the new locale.
+        unload_textdomain( 'woo-nalda-sync' );
+        load_plugin_textdomain( 'woo-nalda-sync', false, dirname( WOO_NALDA_SYNC_PLUGIN_BASENAME ) . '/languages' );
     }
 
     /**
@@ -100,6 +128,16 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
      * @param string $html HTML content.
      */
     private function output_printable_html( $html ) {
+        // Get current language for highlighting.
+        $current_lang = $this->language ?: get_locale();
+        $is_english = ( strpos( $current_lang, 'en' ) === 0 );
+        $is_german = ( strpos( $current_lang, 'de' ) === 0 );
+        
+        // Build language switcher URLs.
+        $base_url = remove_query_arg( 'lang' );
+        $en_url = add_query_arg( 'lang', 'en_US', $base_url );
+        $de_url = add_query_arg( 'lang', 'de_DE', $base_url );
+        
         $full_html = '<!DOCTYPE html>
         <html>
         <head>
@@ -111,10 +149,34 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
                     .no-print { display: none !important; }
                 }
                 @page { margin: 15mm; }
+                .lang-btn {
+                    padding: 8px 16px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    border: 1px solid #ccc;
+                    background: #fff;
+                    margin: 0 5px;
+                    border-radius: 4px;
+                    text-decoration: none;
+                    color: #333;
+                }
+                .lang-btn:hover {
+                    background: #e0e0e0;
+                }
+                .lang-btn.active {
+                    background: #0073aa;
+                    color: #fff;
+                    border-color: #0073aa;
+                }
             </style>
         </head>
         <body>
             <div class="no-print" style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="margin-bottom: 10px;">
+                    <span style="margin-right: 10px; font-weight: bold;">' . esc_html__( 'Language', 'woo-nalda-sync' ) . ':</span>
+                    <a href="' . esc_url( $en_url ) . '" class="lang-btn' . ( $is_english ? ' active' : '' ) . '">English</a>
+                    <a href="' . esc_url( $de_url ) . '" class="lang-btn' . ( $is_german ? ' active' : '' ) . '">Deutsch</a>
+                </div>
                 <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
                     ' . esc_html__( 'Print / Save as PDF', 'woo-nalda-sync' ) . '
                 </button>
