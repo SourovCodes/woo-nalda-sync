@@ -1274,6 +1274,60 @@
     };
 
     /**
+     * Media Uploader for Delivery Note Logo
+     */
+    const MediaUploader = {
+        init: function () {
+            this.bindEvents();
+        },
+
+        bindEvents: function () {
+            $(document).on('click', '#delivery_note_logo_upload', this.openUploader.bind(this));
+            $(document).on('click', '#delivery_note_logo_remove', this.removeImage.bind(this));
+        },
+
+        openUploader: function (e) {
+            e.preventDefault();
+
+            const self = this;
+
+            // Create media frame if it doesn't exist
+            if (this.frame) {
+                this.frame.open();
+                return;
+            }
+
+            this.frame = wp.media({
+                title: wooNaldaSync.strings.selectImage || 'Select Logo',
+                button: {
+                    text: wooNaldaSync.strings.useImage || 'Use this image'
+                },
+                multiple: false
+            });
+
+            this.frame.on('select', function () {
+                const attachment = self.frame.state().get('selection').first().toJSON();
+                self.setImage(attachment.id, attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url);
+            });
+
+            this.frame.open();
+        },
+
+        setImage: function (id, url) {
+            $('#delivery_note_logo_id').val(id);
+            $('#delivery_note_logo_preview').html('<img src="' + url + '" alt="">').show();
+            $('#delivery_note_logo_remove').show();
+        },
+
+        removeImage: function (e) {
+            e.preventDefault();
+            $('#delivery_note_logo_id').val('');
+            $('#delivery_note_logo_preview').html('').hide();
+            $('#delivery_note_logo_remove').hide();
+        }
+    };
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function () {
@@ -1284,6 +1338,7 @@
         UploadHistoryManager.init();
         SyncLogsManager.init();
         UpdateManager.init();
+        MediaUploader.init();
 
         // Restore active tab
         SettingsManager.restoreActiveTab();

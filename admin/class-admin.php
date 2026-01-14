@@ -173,6 +173,9 @@ class Woo_Nalda_Sync_Admin {
             return;
         }
 
+        // Enqueue WordPress media uploader.
+        wp_enqueue_media();
+
         // Enqueue styles.
         wp_enqueue_style(
             'woo-nalda-sync-admin',
@@ -251,6 +254,9 @@ class Woo_Nalda_Sync_Admin {
                 'currentVersion'    => __( 'Current Version', 'woo-nalda-sync' ),
                 'latestVersion'     => __( 'Latest Version', 'woo-nalda-sync' ),
                 'releaseNotes'      => __( 'Release Notes', 'woo-nalda-sync' ),
+                // Media uploader strings.
+                'selectImage'       => __( 'Select Logo', 'woo-nalda-sync' ),
+                'useImage'          => __( 'Use this image', 'woo-nalda-sync' ),
             ),
         ) );
     }
@@ -320,6 +326,9 @@ class Woo_Nalda_Sync_Admin {
             // Advanced
             'log_enabled'            => isset( $data['log_enabled'] ) ? 'yes' : 'no',
             'notification_email'     => isset( $data['notification_email'] ) ? sanitize_email( $data['notification_email'] ) : '',
+            
+            // Delivery Note Settings
+            'delivery_note_logo_id'  => isset( $data['delivery_note_logo_id'] ) ? absint( $data['delivery_note_logo_id'] ) : 0,
         );
 
         return woo_nalda_sync()->update_settings( $settings );

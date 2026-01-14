@@ -575,6 +575,37 @@ $update_info = $updater ? $updater->get_update_info() : false;
                             <input type="email" name="notification_email" class="wns-form-input" value="<?php echo esc_attr( isset( $settings['notification_email'] ) ? $settings['notification_email'] : get_option( 'admin_email' ) ); ?>" placeholder="<?php esc_attr_e( 'Enter email address', 'woo-nalda-sync' ); ?>">
                         </div>
                     </div>
+
+                    <div class="wns-settings-row">
+                        <div class="wns-settings-row-info">
+                            <div class="wns-settings-row-label"><?php esc_html_e( 'Delivery Note Logo', 'woo-nalda-sync' ); ?></div>
+                            <p class="wns-settings-row-desc"><?php esc_html_e( 'Custom logo to display on delivery note PDFs. Leave empty to use your site logo.', 'woo-nalda-sync' ); ?></p>
+                        </div>
+                        <div class="wns-settings-row-control">
+                            <?php
+                            $logo_id = isset( $settings['delivery_note_logo_id'] ) ? absint( $settings['delivery_note_logo_id'] ) : 0;
+                            $logo_url = $logo_id ? wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
+                            ?>
+                            <div class="wns-image-upload-wrapper">
+                                <input type="hidden" name="delivery_note_logo_id" id="delivery_note_logo_id" value="<?php echo esc_attr( $logo_id ); ?>">
+                                <div class="wns-image-preview" id="delivery_note_logo_preview" style="<?php echo $logo_url ? '' : 'display:none;'; ?>">
+                                    <?php if ( $logo_url ) : ?>
+                                        <img src="<?php echo esc_url( $logo_url ); ?>" alt="">
+                                    <?php endif; ?>
+                                </div>
+                                <div class="wns-image-buttons">
+                                    <button type="button" class="wns-btn wns-btn-secondary wns-btn-sm" id="delivery_note_logo_upload">
+                                        <span class="dashicons dashicons-upload"></span>
+                                        <?php esc_html_e( 'Upload Image', 'woo-nalda-sync' ); ?>
+                                    </button>
+                                    <button type="button" class="wns-btn wns-btn-secondary wns-btn-sm" id="delivery_note_logo_remove" style="<?php echo $logo_url ? '' : 'display:none;'; ?>">
+                                        <span class="dashicons dashicons-trash"></span>
+                                        <?php esc_html_e( 'Remove', 'woo-nalda-sync' ); ?>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

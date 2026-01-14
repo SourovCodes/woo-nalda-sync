@@ -172,9 +172,32 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
         // Get Nalda order ID.
         $nalda_order_id = $order->get_meta( '_nalda_order_id' );
         
+        // Get logo from plugin settings, fallback to site logo.
+        $logo_html = '';
+        $settings = woo_nalda_sync()->get_setting();
+        $delivery_note_logo_id = isset( $settings['delivery_note_logo_id'] ) ? absint( $settings['delivery_note_logo_id'] ) : 0;
+        
+        if ( $delivery_note_logo_id ) {
+            $logo_url = wp_get_attachment_image_url( $delivery_note_logo_id, 'medium' );
+            if ( $logo_url ) {
+                $logo_html = '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $store_name ) . '" style="max-height: 60px; max-width: 200px;">';
+            }
+        }
+        
+        // Fallback to site logo if no custom logo is set.
+        if ( empty( $logo_html ) ) {
+            $custom_logo_id = get_theme_mod( 'custom_logo' );
+            if ( $custom_logo_id ) {
+                $logo_url = wp_get_attachment_image_url( $custom_logo_id, 'medium' );
+                if ( $logo_url ) {
+                    $logo_html = '<img src="' . esc_url( $logo_url ) . '" alt="' . esc_attr( $store_name ) . '" style="max-height: 60px; max-width: 200px;">';
+                }
+            }
+        }
+        
         // Get Nalda logo.
-        $logo_url = plugins_url( 'admin/assets/images/nalda-logo.webp', dirname( __FILE__ ) );
-        $logo_html = '<img src="' . esc_url( $logo_url ) . '" alt="Nalda" style="max-height: 60px; max-width: 200px;">';
+        $nalda_logo_url = plugins_url( 'admin/assets/images/nalda-logo.webp', dirname( __FILE__ ) );
+        $nalda_logo_html = '<img src="' . esc_url( $nalda_logo_url ) . '" alt="Nalda" style="max-height: 40px; max-width: 150px;">';
         
         // Build product rows.
         $items_html = '';
@@ -260,6 +283,7 @@ class Woo_Nalda_Sync_Delivery_Note_PDF {
                             ' . esc_html__( 'Date', 'woo-nalda-sync' ) . ': ' . esc_html( $order->get_date_created()->date_i18n( get_option( 'date_format' ) ) ) . '
                             ' . ( $nalda_order_id ? '<br><span style="color: #e67e22;">Nalda #' . esc_html( $nalda_order_id ) . '</span>' : '' ) . '
                         </p>
+                        ' . ( $nalda_order_id ? '<div style="margin-top: 10px;">' . $nalda_logo_html . '</div>' : '' ) . '
                     </td>
                 </tr>
             </table>

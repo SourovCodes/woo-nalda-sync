@@ -2847,3 +2847,34 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   Image Upload
+   ========================================================================== */
+
+.wns-image-upload-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wns-image-preview {
+    width: 200px;
+    height: auto;
+    border: 2px dashed var(--wns-gray-300);
+    border-radius: var(--wns-border-radius-sm);
+    padding: 10px;
+    background: var(--wns-gray-50);
+}
+
+.wns-image-preview img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+}
+
+.wns-image-buttons {
+    display: flex;
+    gap: 8px;
+}
