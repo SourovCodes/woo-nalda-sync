@@ -597,10 +597,10 @@ class Woo_Nalda_Sync_Order_Import {
                 }
             }
 
-            // Set Nalda delivery fields if available from API.
-            if ( ! empty( $first_delivery_status ) ) {
-                $order->update_meta_data( '_nalda_state', $first_delivery_status );
-            }
+            // Set Nalda delivery fields from API.
+            // Always set the state - use deliveryStatus from items, or default to IN_PREPARATION for new orders.
+            $order->update_meta_data( '_nalda_state', ! empty( $first_delivery_status ) ? $first_delivery_status : 'IN_PREPARATION' );
+            
             if ( ! empty( $first_delivery_date ) ) {
                 // Convert to YYYY-MM-DD format for date input field.
                 $delivery_date_formatted = date( 'Y-m-d', strtotime( $first_delivery_date ) );
@@ -846,23 +846,8 @@ class Woo_Nalda_Sync_Order_Import {
                 }
             }
             
-            // Update order-level Nalda state from API if changed.
-            if ( ! empty( $first_delivery_status ) ) {
-                $current_state = $order->get_meta( '_nalda_state' );
-                if ( $current_state !== $first_delivery_status ) {
-                    $order->update_meta_data( '_nalda_state', $first_delivery_status );
-                    $order->add_order_note(
-                        sprintf(
-                            __( 'Nalda state updated: %s → %s', 'woo-nalda-sync' ),
-                            $current_state ?: 'None',
-                            $first_delivery_status
-                        ),
-                        false,
-                        true
-                    );
-                    $updated = true;
-                }
-            }
+            // Note: We don't update order-level Nalda state during sync updates.
+            // State is only set during initial order creation to allow manual overrides.
             
             // Update order-level expected delivery date from API if changed.
             if ( ! empty( $first_delivery_date ) ) {
