@@ -467,6 +467,12 @@ class Woo_Nalda_Sync_Order_Import {
      */
     private function create_order( $nalda_order, $order_items ) {
         try {
+            // Disable WooCommerce emails during order import.
+            // This prevents sending emails with incorrect/0 amounts.
+            add_filter( 'woocommerce_email_enabled_new_order', '__return_false' );
+            add_filter( 'woocommerce_email_enabled_customer_processing_order', '__return_false' );
+            add_filter( 'woocommerce_email_enabled_customer_on_hold_order', '__return_false' );
+            
             // Get or create customer.
             $customer_id = $this->get_or_create_customer( $nalda_order );
 
@@ -488,7 +494,7 @@ class Woo_Nalda_Sync_Order_Import {
             $order->set_billing_company( 'Nalda Marketplace AG' );
             $order->set_billing_first_name( 'Nalda' );
             $order->set_billing_last_name( 'Marketplace' );
-            $order->set_billing_email( 'orders@nalda.com' );
+            $order->set_billing_email( 'orders@sourov.me' );
             $order->set_billing_address_1( 'Grabenstrasse 15a' );
             $order->set_billing_city( 'Baar' );
             $order->set_billing_postcode( '6340' );
@@ -624,9 +630,20 @@ class Woo_Nalda_Sync_Order_Import {
 
             $order->save();
 
-            // Now set the order status to 'processing'.
-            // This triggers the "New Order" email with the correct totals.
+            // Now set the order status to 'processing' (emails still disabled).
             $order->update_status( 'processing', __( 'Order imported from Nalda Marketplace.', 'woo-nalda-sync' ) );
+            
+            // Re-enable WooCommerce emails.
+            remove_filter( 'woocommerce_email_enabled_new_order', '__return_false' );
+            remove_filter( 'woocommerce_email_enabled_customer_processing_order', '__return_false' );
+            remove_filter( 'woocommerce_email_enabled_customer_on_hold_order', '__return_false' );
+            
+            // Manually trigger the new order email now that totals are correct.
+            // Reload the order to ensure we have fresh data from the database.
+            $order = wc_get_order( $order->get_id() );
+            if ( $order ) {
+                do_action( 'woocommerce_order_status_pending_to_processing_notification', $order->get_id(), $order );
+            }
 
             $this->log( sprintf( 'Created WooCommerce order #%d from Nalda order #%d', $order->get_id(), $nalda_order['orderId'] ) );
 
