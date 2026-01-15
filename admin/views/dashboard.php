@@ -24,6 +24,18 @@ $orders_synced     = isset( $stats['orders_synced'] ) ? $stats['orders_synced'] 
 $next_product_export = isset( $next_sync_times['product_export'] ) && $next_sync_times['product_export'] ? $next_sync_times['product_export'] : null;
 $next_order_import   = isset( $next_sync_times['order_import'] ) && $next_sync_times['order_import'] ? $next_sync_times['order_import'] : null;
 
+// Get schedule intervals for overdue detection.
+$product_export_schedule = isset( $settings['product_export_schedule'] ) ? $settings['product_export_schedule'] : 'daily';
+$order_import_schedule   = isset( $settings['order_import_schedule'] ) ? $settings['order_import_schedule'] : 'hourly';
+$schedules = wp_get_schedules();
+$product_export_interval = isset( $schedules[ $product_export_schedule ]['interval'] ) ? $schedules[ $product_export_schedule ]['interval'] : 86400;
+$order_import_interval   = isset( $schedules[ $order_import_schedule ]['interval'] ) ? $schedules[ $order_import_schedule ]['interval'] : 3600;
+
+// Check if syncs are overdue.
+$product_export_overdue = $next_product_export && $next_product_export <= time() && ( time() - $next_product_export ) >= $product_export_interval;
+$order_import_overdue   = $next_order_import && $next_order_import <= time() && ( time() - $next_order_import ) >= $order_import_interval;
+$wp_cron_disabled       = defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON;
+
 // Check configuration status.
 $sftp_configured  = ! empty( $settings['sftp_host'] ) && ! empty( $settings['sftp_username'] );
 $api_configured   = ! empty( $settings['nalda_api_key'] );
@@ -161,6 +173,123 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
         </div>
     </div>
 
+    <!-- Scheduled Sync Status Cards -->
+    <div class="wns-grid wns-grid-2" style="margin-bottom: 24px;">
+        <!-- Product Export Schedule -->
+        <div class="wns-card wns-status-card <?php echo $product_export_status ? ( $product_export_overdue ? 'wns-status-warning' : 'wns-status-success' ) : 'wns-status-neutral'; ?>">
+            <div class="wns-card-body">
+                <div class="wns-status-header">
+                    <div class="wns-status-icon">
+                        <span class="dashicons dashicons-<?php echo $product_export_status ? ( $product_export_overdue ? 'warning' : 'controls-repeat' ) : 'clock'; ?>"></span>
+                    </div>
+                    <span class="wns-status-badge"><?php echo $product_export_status ? esc_html__( 'Enabled', 'woo-nalda-sync' ) : esc_html__( 'Disabled', 'woo-nalda-sync' ); ?></span>
+                </div>
+                <h3 class="wns-status-title"><?php esc_html_e( 'Product Export Schedule', 'woo-nalda-sync' ); ?></h3>
+                <p class="wns-status-desc">
+                    <?php 
+                    if ( $product_export_status && $next_product_export ) {
+                        $current_timestamp = current_time( 'timestamp' );
+                        $time_since_scheduled = time() - $next_product_export;
+                        
+                        if ( $next_product_export <= time() && $time_since_scheduled >= $product_export_interval ) {
+                            esc_html_e( 'Export pending...', 'woo-nalda-sync' );
+                        } elseif ( $next_product_export <= time() ) {
+                            esc_html_e( 'Export pending...', 'woo-nalda-sync' );
+                        } else {
+                            printf( 
+                                esc_html__( 'Next export: %s', 'woo-nalda-sync' ), 
+                                esc_html( human_time_diff( time(), $next_product_export ) ) 
+                            );
+                        }
+                    } elseif ( $product_export_status ) {
+                        esc_html_e( 'Scheduled export active.', 'woo-nalda-sync' );
+                    } else {
+                        esc_html_e( 'Enable automatic product export.', 'woo-nalda-sync' );
+                    }
+                    ?>
+                </p>
+                <?php if ( ! $product_export_status ) : ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-status-link">
+                        <?php esc_html_e( 'Enable Export', 'woo-nalda-sync' ); ?> →
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Order Import Schedule -->
+        <div class="wns-card wns-status-card <?php echo $order_import_status ? ( $order_import_overdue ? 'wns-status-warning' : 'wns-status-success' ) : 'wns-status-neutral'; ?>">
+            <div class="wns-card-body">
+                <div class="wns-status-header">
+                    <div class="wns-status-icon">
+                        <span class="dashicons dashicons-<?php echo $order_import_status ? ( $order_import_overdue ? 'warning' : 'controls-repeat' ) : 'clock'; ?>"></span>
+                    </div>
+                    <span class="wns-status-badge"><?php echo $order_import_status ? esc_html__( 'Enabled', 'woo-nalda-sync' ) : esc_html__( 'Disabled', 'woo-nalda-sync' ); ?></span>
+                </div>
+                <h3 class="wns-status-title"><?php esc_html_e( 'Order Import Schedule', 'woo-nalda-sync' ); ?></h3>
+                <p class="wns-status-desc">
+                    <?php 
+                    if ( $order_import_status && $next_order_import ) {
+                        $current_timestamp = current_time( 'timestamp' );
+                        $time_since_scheduled = time() - $next_order_import;
+                        
+                        if ( $next_order_import <= time() && $time_since_scheduled >= $order_import_interval ) {
+                            esc_html_e( 'Import pending...', 'woo-nalda-sync' );
+                        } elseif ( $next_order_import <= time() ) {
+                            esc_html_e( 'Import pending...', 'woo-nalda-sync' );
+                        } else {
+                            printf( 
+                                esc_html__( 'Next import: %s', 'woo-nalda-sync' ), 
+                                esc_html( human_time_diff( time(), $next_order_import ) ) 
+                            );
+                        }
+                    } elseif ( $order_import_status ) {
+                        esc_html_e( 'Scheduled import active.', 'woo-nalda-sync' );
+                    } else {
+                        esc_html_e( 'Enable automatic order import.', 'woo-nalda-sync' );
+                    }
+                    ?>
+                </p>
+                <?php if ( ! $order_import_status ) : ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=woo-nalda-sync-settings' ) ); ?>" class="wns-status-link">
+                        <?php esc_html_e( 'Enable Import', 'woo-nalda-sync' ); ?> →
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cron Status Alert (if any sync is overdue) -->
+    <?php if ( ( $product_export_overdue || $order_import_overdue ) && ( $product_export_status || $order_import_status ) ) : ?>
+        <div class="wns-alert wns-alert-warning" style="margin-bottom: 24px;">
+            <span class="wns-alert-icon dashicons dashicons-warning"></span>
+            <div class="wns-alert-content">
+                <div class="wns-alert-title"><?php esc_html_e( 'Scheduled Sync Pending', 'woo-nalda-sync' ); ?></div>
+                <div class="wns-alert-message">
+                    <p style="margin: 0 0 12px;">
+                        <?php esc_html_e( 'A scheduled sync is waiting to run. WordPress uses cron jobs to trigger syncs automatically when visitors access your site.', 'woo-nalda-sync' ); ?>
+                    </p>
+                    <?php if ( $wp_cron_disabled ) : ?>
+                        <p style="margin: 0 0 12px; font-weight: 600; color: #d63384;">
+                            <?php esc_html_e( 'WordPress Cron is Disabled', 'woo-nalda-sync' ); ?>
+                        </p>
+                        <p style="margin: 0 0 12px;">
+                            <?php esc_html_e( 'Your wp-config.php has DISABLE_WP_CRON set to true. You must set up a server cron job:', 'woo-nalda-sync' ); ?>
+                        </p>
+                        <div style="background: #fff; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; margin: 0 0 12px; overflow-x: auto;">
+                            <code style="color: #d63384;">*/5 * * * * curl -s <?php echo esc_url( site_url( 'wp-cron.php?doing_wp_cron' ) ); ?> > /dev/null 2>&1</code>
+                        </div>
+                    <?php else : ?>
+                        <p style="margin: 0;">
+                            <a href="<?php echo esc_url( site_url( 'wp-cron.php?doing_wp_cron' ) ); ?>" target="_blank" rel="noopener noreferrer" class="wns-btn wns-btn-primary wns-btn-sm">
+                                <?php esc_html_e( 'Trigger Cron Now', 'woo-nalda-sync' ); ?>
+                            </a>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Sync Controls & Stats -->
     <div class="wns-grid wns-grid-2">
         <!-- Product Export Panel -->
@@ -204,7 +333,15 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                     <?php if ( $product_export_status && $next_product_export ) : ?>
                         <div class="wns-sync-stat">
                             <span class="wns-sync-stat-value">
-                                <?php echo esc_html( human_time_diff( time(), $next_product_export ) ); ?>
+                                <?php
+                                if ( $product_export_overdue ) {
+                                    echo '<span style="color: #f0ad4e;">' . esc_html__( 'Pending...', 'woo-nalda-sync' ) . '</span>';
+                                } elseif ( $next_product_export <= time() ) {
+                                    esc_html_e( 'Pending...', 'woo-nalda-sync' );
+                                } else {
+                                    echo esc_html( human_time_diff( time(), $next_product_export ) );
+                                }
+                                ?>
                             </span>
                             <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Export', 'woo-nalda-sync' ); ?></span>
                         </div>
@@ -318,6 +455,11 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
     $orders_status_exported       = isset( $order_status_export_stats['orders_exported'] ) ? $order_status_export_stats['orders_exported'] : 0;
     $order_status_export_enabled  = isset( $settings['order_status_export_enabled'] ) && 'yes' === $settings['order_status_export_enabled'];
     $next_order_status_export     = isset( $next_sync_times['order_status_export'] ) && $next_sync_times['order_status_export'] ? $next_sync_times['order_status_export'] : null;
+    
+    // Check if order status export is overdue.
+    $order_status_export_schedule = isset( $settings['order_status_export_schedule'] ) ? $settings['order_status_export_schedule'] : 'hourly';
+    $order_status_export_interval = isset( $schedules[ $order_status_export_schedule ]['interval'] ) ? $schedules[ $order_status_export_schedule ]['interval'] : 3600;
+    $order_status_export_overdue  = $next_order_status_export && $next_order_status_export <= time() && ( time() - $next_order_status_export ) >= $order_status_export_interval;
     ?>
     <div class="wns-card" style="margin-bottom: 24px;">
         <div class="wns-card-header">
@@ -362,7 +504,15 @@ $setup_percentage = ( $setup_progress / 5 ) * 100;
                 <?php if ( $order_status_export_enabled && $next_order_status_export ) : ?>
                     <div class="wns-sync-stat">
                         <span class="wns-sync-stat-value">
-                            <?php echo esc_html( human_time_diff( time(), $next_order_status_export ) ); ?>
+                            <?php
+                            if ( $order_status_export_overdue ) {
+                                echo '<span style="color: #f0ad4e;">' . esc_html__( 'Pending...', 'woo-nalda-sync' ) . '</span>';
+                            } elseif ( $next_order_status_export <= time() ) {
+                                esc_html_e( 'Pending...', 'woo-nalda-sync' );
+                            } else {
+                                echo esc_html( human_time_diff( time(), $next_order_status_export ) );
+                            }
+                            ?>
                         </span>
                         <span class="wns-sync-stat-label"><?php esc_html_e( 'Next Export', 'woo-nalda-sync' ); ?></span>
                     </div>
