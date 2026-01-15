@@ -470,9 +470,12 @@ class Woo_Nalda_Sync_Order_Import {
             // Get or create customer.
             $customer_id = $this->get_or_create_customer( $nalda_order );
 
+            // Create order with 'pending' status first (don't set 'processing' yet).
+            // This prevents WooCommerce from sending the "New Order" email before items are added.
+            // We'll set the status to 'processing' after all items and totals are calculated.
             $order = wc_create_order( array(
-                'status'        => 'processing',
                 'customer_id'   => $customer_id,
+                'created_via'   => 'nalda',
                 'customer_note' => sprintf( __( 'Imported from Nalda Marketplace (Order #%d)', 'woo-nalda-sync' ), $nalda_order['orderId'] ),
             ) );
 
@@ -620,6 +623,10 @@ class Woo_Nalda_Sync_Order_Import {
             );
 
             $order->save();
+
+            // Now set the order status to 'processing'.
+            // This triggers the "New Order" email with the correct totals.
+            $order->update_status( 'processing', __( 'Order imported from Nalda Marketplace.', 'woo-nalda-sync' ) );
 
             $this->log( sprintf( 'Created WooCommerce order #%d from Nalda order #%d', $order->get_id(), $nalda_order['orderId'] ) );
 

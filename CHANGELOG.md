@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.12] - 2026-01-15
+
+### Fixed
+- Fixed "New Order" email showing 0 amount - order status is now set after items and totals are calculated
+
 ## [1.0.11] - 2026-01-15
 
 ### Fixed
