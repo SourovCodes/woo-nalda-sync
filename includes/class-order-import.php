@@ -494,7 +494,7 @@ class Woo_Nalda_Sync_Order_Import {
             $order->set_billing_company( 'Nalda Marketplace AG' );
             $order->set_billing_first_name( 'Nalda' );
             $order->set_billing_last_name( 'Marketplace' );
-            $order->set_billing_email( 'orders@sourov.me' );
+            $order->set_billing_email( 'orders@nalda.com' );
             $order->set_billing_address_1( 'Grabenstrasse 15a' );
             $order->set_billing_city( 'Baar' );
             $order->set_billing_postcode( '6340' );
