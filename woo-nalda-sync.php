@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce Nalda Sync
  * Plugin URI: https://jonakyds.com/plugins/woo-nalda-sync
  * Description: Sync your WooCommerce store with Nalda for seamless inventory and order management.
- * Version: 1.0.13
+ * Version: 1.0.14
  * Author: Jonakyds
  * Author URI: https://jonakyds.com
  * License: GPL-2.0+
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'WOO_NALDA_SYNC_VERSION', '1.0.13' );
+define( 'WOO_NALDA_SYNC_VERSION', '1.0.14' );
 define( 'WOO_NALDA_SYNC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WOO_NALDA_SYNC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
